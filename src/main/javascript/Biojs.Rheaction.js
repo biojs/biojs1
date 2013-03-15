@@ -26,9 +26,12 @@
  * @option {string} [dimensions='200']
  *  The dimensions of compound structure images (side of the square) in pixels.
  *
- * @option {string} [proxyType='jsp']
- *  The language of the proxy we will use to request Rhea reactions.
- *  Currently, 'php' and 'jsp' are supported.
+ * @option {string} [proxyUrl='../biojs/dependencies/proxy/proxy.php']
+ *  This component needs to request data from a web service. To bypass the same origin policy 
+ *  (http://en.wikipedia.org/wiki/Same_origin_policy) this component needs a proxy.  
+ *  You could use your own proxy by modifying this value or one of the BioJS proxies: 
+ *  '../biojs/dependencies/proxy/proxy.php' or '../biojs/dependencies/proxy/proxy.jsp'
+ *  
  *
  * @example
  * var instance = new Biojs.Rheaction({
@@ -40,8 +43,30 @@ Biojs.Rheaction = Biojs.extend (
 /** @lends Biojs.Rheaction# */
 {
     constructor: function (options){
+		//Biojs.console.enable();
+		this.setId(this.opt.id);
+    },
+	/**
+	 * Sets and displays data for a new identifier.
+	 * @param {string} id The identifier.
+	 * 
+	 * @example 
+	 * instance.setId("RHEA:10280");
+	 * 
+	 * @example 
+	 * instance.setId("10735");
+	 * 
+	 * @example 
+	 * instance.setId("RHEA:18476");
+	 * 
+	 * @example 
+	 * instance.setId("XXXXX");
+	 * 
+	 */
+	setId: function(id){
+		this._clearContent();
         var self = this;
-		var rheaId = this.opt.id.replace('RHEA:', '');
+		var rheaId = id.replace('RHEA:', '');
         this._rheaIdLabel = 'RHEA_' + rheaId;
         if ( "string" == (typeof this.opt.target) ) {
 			this._container = jQuery( "#" + this.opt.target );
@@ -50,10 +75,10 @@ Biojs.Rheaction = Biojs.extend (
 			this._container = jQuery('<div id="'+ this.opt.target +'"></div>');
 		}
         this._container.addClass('scrollpane');
-        this._reactionRow = jQuery('<div/>', { class: 'reactionRow' });
+        this._reactionRow = jQuery('<div/>',{"class":'reactionRow'});
         this._container.append(this._reactionRow);
-        this._getCml(rheaId);
-    },
+        this._getCml(rheaId);		
+	},
 
     /** 
      * Default values for the options.
@@ -63,12 +88,19 @@ Biojs.Rheaction = Biojs.extend (
         target: undefined,
         id: undefined,
         dimensions: '200',
-        proxyType: 'jsp',
-        proxyUrl: '../biojs/dependencies/proxy/proxy.',
+        proxyUrl: '../biojs/dependencies/proxy/proxy.php',
         rheaWsUrl: 'http://www.ebi.ac.uk/rhea/rest/1.0/ws/reaction/cmlreact/',
         chebiUrl: 'http://www.ebi.ac.uk/chebi/searchId.do?chebiId=',
         chebiImgUrl: 'http://www.ebi.ac.uk/chebi/displayImage.do?defaultImage=true&scaleMolecule=true&chebiId='
     },
+	
+	_clearContent: function(){
+		jQuery("#" + this.opt.target).html("");
+	},
+	
+	_displayNoDataMessage: function(){
+		jQuery('#'+this.opt.target+'').html(Biojs.Rheaction.MESSAGE_NODATA);
+	},
 
     _getCml: function(rheaId){
         var self = this;
@@ -76,6 +108,7 @@ Biojs.Rheaction = Biojs.extend (
         var httpRequest = {
             url: reactionUrl,
             method: 'GET',
+			/** @ignore No need to document this object */
             success: function(xml){
                 self._dataReceived(xml);
             },
@@ -88,7 +121,7 @@ Biojs.Rheaction = Biojs.extend (
 	   	// Redirect using the proxy and encode all params as url data
 	   	if ( this.opt.proxyUrl != undefined ) {
 	   		 // Redirect to proxy url
-	   		 httpRequest.url = this.opt.proxyUrl + this.opt.proxyType;
+	   		 httpRequest.url = this.opt.proxyUrl;
 	   		 // Encode both url and parameters under the param url
 	   		 httpRequest.data = [{ name: "url", value: reactionUrl }];
 	   		 // Data type 
@@ -101,26 +134,33 @@ Biojs.Rheaction = Biojs.extend (
     _dataReceived: function(xml){
         var self = this;
         var data = {};
+		var xmlDoc = "";
         if (xml.length > 0){
-            xmlDoc = jQuery.parseXML(xml);
-            xmlResult = jQuery(xmlDoc).find('reaction');
-            var reactants = xmlResult.find('reactant');
-            for (var i = 0; i < reactants.length; i++){
-                if (i > 0) self._addPlus();
-                self._addParticipant(reactants[i]);
-            }
-            self._addDirection(xmlResult.attr('convention'));
-            var products = xmlResult.find('product');
-            for (var i = 0; i < products.length; i++){
-                if (i > 0) self._addPlus();
-                self._addParticipant(products[i]);
-            }
-
+			try {
+				xmlDoc = jQuery.parseXML(xml);
+				xmlResult = jQuery(xmlDoc).find('reaction');
+	            var reactants = xmlResult.find('reactant');
+	            for (var i = 0; i < reactants.length; i++){
+	                if (i > 0) self._addPlus();
+	                self._addParticipant(reactants[i]);
+	            }
+	            self._addDirection(xmlResult.attr('convention'));
+	            var products = xmlResult.find('product');
+	            for (var i = 0; i < products.length; i++){
+	                if (i > 0) self._addPlus();
+	                self._addParticipant(products[i]);
+	            }
+			} catch (e) {
+				Biojs.console.log("ERROR decoding ");
+				Biojs.console.log(e);
+				this._displayNoDataMessage();
+			}
         }
     },
+	
 
     _addPlus: function(){
-        jQuery('<div/>', { class: 'direction', html: '+' })
+        jQuery('<div/>', { "class": 'direction', html: '+' })
                 .appendTo(this._reactionRow);
     },
 
@@ -138,7 +178,7 @@ Biojs.Rheaction = Biojs.extend (
             dirLabel = '=&gt;';
             break;
         }
-        jQuery('<div/>', { class: 'direction', html: dirLabel })
+        jQuery('<div/>', { "class": 'direction', html: dirLabel })
                 .appendTo(this._reactionRow);
     },
 
@@ -151,17 +191,17 @@ Biojs.Rheaction = Biojs.extend (
 
         jQuery('<div/>', {
                 id: compDivId,
-                class: 'compound',
+                "class": 'compound',
                 css: { width: this.opt.dimensions }
         }).appendTo(this._reactionRow);
         if (coef > 1){
             $('#'+compDivId).append(jQuery('<span/>', {
-                class: 'stoichCoef',
+                "class": 'stoichCoef',
                 html: coef
             }));
         }
         $('#'+compDivId).append(jQuery('<a/>', {
-                class: 'compoundName',
+                "class": 'compoundName',
                 html: compoundName,
                 href: this.opt.chebiUrl + chebiId,
                 title: 'CHEBI:' + chebiId
@@ -171,10 +211,11 @@ Biojs.Rheaction = Biojs.extend (
                 + '&dimensions=' + this.opt.dimensions;
         $('#'+compDivId).append(jQuery('<img/>', {
                 src: imgUrl,
-                class: 'compoundStructure',
+                "class": 'compoundStructure',
                 title: 'CHEBI:' + chebiId
         }));
     }
+},{
+	MESSAGE_NODATA: "Sorry, no results for your request",
 });
-
 
