@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Biojs : A library of JavaScript components to represent biological data" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Biojs</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/biojs/biojs">View on GitHub</a>
+
+          <h1 id="project_title">Biojs</h1>
+          <h2 id="project_tagline">A library of JavaScript components to represent biological data</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/biojs/biojs/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/biojs/biojs/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h3>
+<a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h3>
+
+<p>The aim of this project is to create a library of graphical components easy to reuse to represent biological information. A library easy to maintain and develop by identifying minimal functional units that could be used as building blocks for more complex applications. A browser independent JavaScript library easy to integrate in web applications regardless the programming language used to develop the server side.</p>
+
+<ul>
+<li>
+<a href="http://www.ebi.ac.uk/Tools/biojs/registry">Registry</a> of components</li>
+<li>
+<a href="https://code.google.com/p/biojs/wiki/Documentation">Documentation</a> for developers</li>
+</ul><h3>
+<a name="objectives" class="anchor" href="#objectives"><span class="octicon octicon-link"></span></a>Objectives</h3>
+
+<ol>
+<li>Represent consistently biological information across different projects</li>
+<li>Ease discovery, test and integration of graphical components</li>
+<li>Standardize and facilitate components development</li>
+</ol><h3>
+<a name="use-a-biojs-component" class="anchor" href="#use-a-biojs-component"><span class="octicon octicon-link"></span></a>Use a BioJS component</h3>
+
+<ol>
+<li>Search and select a component in a BioJS registry. i.e. <a href="http://wwwdev.ebi.ac.uk/Tools/biojs/registry/components.html">EBI BioJS registry</a>
+</li>
+<li>Look at the "overview" section to see an example of how a component works</li>
+<li>Check the "options", "methods" and "events" sections to see more information about the functionality provided by a component</li>
+<li>Find inside the "installation" section the code and dependencies you will need to make a component working in a web page</li>
+</ol><h3>
+<a name="develop-a-component" class="anchor" href="#develop-a-component"><span class="octicon octicon-link"></span></a>Develop a component</h3>
+
+<p>BioJS components are framework agnostic, only requiring the code to be written in JavaScript?. The developer of a new component is thus free to use any framework (e.g. <a href="http://jquery.com/">JQuery</a>, <a href="http://yuilibrary.com/">YUI</a>) and to include any other library (e.g. <a href="http://raphaeljs.com/">Raphael</a>, <a href="http://d3js.org/">D3</a>).</p>
+
+<p>Any component by definition extends the BioJS reference implementation incorporating the rules provided by the BioJS specification. The <a href="https://docs.google.com/document/d/1gG036Bvwl4i-KX5BTHddGzeE_5eospL-864BrnsAS_s/edit">BioJS specification</a> defines:</p>
+
+<ol>
+<li>the component architecture</li>
+<li>a protocol to handle events that allows communication between components</li>
+<li>the component extension through Object Oriented Inheritance</li>
+<li>the code documentation format</li>
+<li>documentation on how to include examples to test the component functionality</li>
+</ol><h5>
+<a name="create-a-new-component-from-scratch" class="anchor" href="#create-a-new-component-from-scratch"><span class="octicon octicon-link"></span></a>Create a new component from scratch</h5>
+
+<p>We would recommend you to follow our tutorials (<a href="http://code.google.com/p/biojs/wiki/Documentation#Tutorials">1</a>, <a href="http://www.ebi.ac.uk/Tools/biojs/tutorials/2013-06-17_biojs_workshop.html">2</a>) and read the <a href="http://code.google.com/p/biojs/wiki/Documentation">BioJS documentation</a>. </p>
+
+<p>Visualization components can be as complex as you want. However we encourage you to identify the minimal parts that make sense to isolate building components that can be reused independently or as a part of another more complex components.</p>
+
+<p>Before coding we suggest to collect <a href="http://code.google.com/p/biojs/wiki/Documentation#Requirements">requirements</a> that will help you to think about how to implement a component. You could use our <a href="https://docs.google.com/document/d/1LLyUK0jEc8KXAtlmUc7vX68wvR3k8AoSdkLVSKcK1M0/edit">template</a> to collect requirements or you could follow your own. If would like to share your requirements document we will be happy to include it in the list of <a href="http://code.google.com/p/biojs/wiki/Documentation#Requirements">component requirements</a>.</p>
+
+<h5>
+<a name="wrap-javascript-functionality-as-biojs" class="anchor" href="#wrap-javascript-functionality-as-biojs"><span class="octicon octicon-link"></span></a>Wrap JavaScript? functionality as BioJS</h5>
+
+<p>If you already have some JavaScript? functionality you could make it BioJS creating a wrapper on top of it. A wrapper is simply a new BioJS components using your JavaScript? functionality as a dependency. We do not have a specific tutorial for this, but you could use the tutorials we have to create a component.</p>
+
+<h3>
+<a name="feedback" class="anchor" href="#feedback"><span class="octicon octicon-link"></span></a>Feedback</h3>
+
+<p>Please feel free to send us <a href="http://code.google.com/p/biojs/issues/entry?template=Feature">feature requests</a> and/or <a href="http://code.google.com/p/biojs/issues/entry?template=Brainstorming">ideas</a> of what it should be considered in the development of BioJS. Brainstorming ideas will be automatically shared in our <a href="biojs@googlegroups.com">BioJS mailing list</a>. </p>
+
+<p>Join the <a href="biojs@googlegroups.com">BioJS mailing list</a> if you would like to send us an email to participate or provide feedback about the project.  </p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Biojs maintained by <a href="https://github.com/biojs">biojs</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
