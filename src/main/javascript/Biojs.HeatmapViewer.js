@@ -13,11 +13,11 @@
  * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/jquery/jquery-1.9.1.min.js"></script>
  *
  * @requires <a href='http://d3js.org/d3.v3.min.js'>D3 Version 3</a>
- * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/d3.v3.min.js"></script>
+ * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/jquery/d3.v3.min.js"></script>
  *
  * @param {Object} options An object with the options for HeatmapViewer component.
  *
- * @option {string} target
+ * @option {string} targetDiv
  *    Identifier of the DIV tag where the component should be displayed.
  *
  * @option {string} jsonData
@@ -63,121 +63,150 @@
  *
  * @optional {Onject} user_defined_config
  *     Configuration options for the component
- *     
+ *
  * @optional {Onject} show_zoom_panel
  *      Display the zoom panel. default: true
- *      
+ *
  * @optional {Onject} showScale
  *      Display the scale object. default: true
- *      
+ *
  * @example
  * var painter = new Biojs.HeatmapViewer({
- *						jsonData:
- *    		[{
- *		    "col": 0,
- *		    "row": 0,
- *		    "label": "M",
- *		    "score": 27,
- *		    "row_label": "A"
- *		}, {
- *		    "col": 0,
- *		    "row": 1,
- *		    "label": "M",
- *		    "score": 5,
- *		    "row_label": "C"
- *		}, {
- *		    "col": 1,
- *		    "row": 0,
- *		    "label": "M",
- *		    "score": 43,
- *		    "row_label": "D"
- *		}, {
- *		    "col": 1,
- *		    "row": 1,
- *		    "label": "M",
- *		    "score": 58,
- *		    "row_label": "E"
- *		}],
+ *						jsonData: data,
  *						user_defined_config: {
  *							colorLow: 'blue',
  *							colorMed: 'white',
  *							colorHigh: 'red'
  *						},
- *						target: 'YourOwnDivId',
+ *						targetDiv: 'heatmapContainer',
  *				});
  *
  *
- * 
- * 
+ *
+ *
  * @class
  * @extends Biojs
  */
 
 Biojs.HeatmapViewer = Biojs.extend({
-	/** @lends Biojs.HeatmapViewer */
-	/**
-	 * public variables
-	 */
-	targetDiv: undefined,
+    /** @lends Biojs.HeatmapViewer */
+    /**
+     * public variables
+     */
+    targetDiv: undefined,
+    main_heatmap_cfg: {},
+    zoom_heatmap_cfg: {},
+    slider_cfg: {
+        start_pos: 0,
+        end_pos: 0,
 
-	/**
-	 * private variables
-	 */
-	_MAIN_HEAT_MAP_DIV: 'main_heatmap_div',
-	_ZOOM_HEAT_MAP_DIV: 'zoom_heatmap_div',
-	_SLIDER_DIV: 'slider_heatmap_div',
-	_SCALE_DIV: 'scale_div',
+    },
 
-	_origData: undefined,
-	_zoomedData: undefined,
+    /**
+     * private variables
+     */
+    _MAIN_HEAT_MAP_DIV: 'main_heatmap_div',
+    _ZOOM_HEAT_MAP_DIV: 'zoom_heatmap_div',
+    _SLIDER_DIV: 'slider_heatmap_div',
+    _SCALE_DIV: 'scale_div',
+    _RIGHT_MARGIN: 30,
+    _LEFT_MARGIN: 30,
+    _TOP_MARGIN: 30,
+    _BOTTOM_MARGIN: 30,
 
-	viewer_config: {
-		dimensions: {},
-		displayDiv: '',
-		colorLow: 'green',
-		colorMed: 'white',
-		colorHigh: 'red',
-		scoreLow: -100,
-		scoreMed: 0,
-		scoreHigh: 100,
-		offset: 0,
-		x_axis: [],
-		y_axis: [],
-		canvas_margin: {
-			top: 30,
-			right: 30,
-			bottom: 30,
-			left: 30
-		},
-		labels: {
-			max_font_size: 20,
-			min_font_size: 11
-		},
-		main_heatmap: {
-			min_cell_width: 2,
-			max_cell_width: 100,
-			orig_cell_width: 0
-		},
-		zoom_area: {
-			cell_width: 20
-		},
-		slider: {
-			start_value: 0,
-			increments: 50
-		}
+    // Boundaries
+    _MIN_CELL_WIDTH: 2,
+    _MAX_CELL_WIDTH: 100,
+    _MIN_FONT_SIZE: 11,
+    _MAX_FONT_SIZE: 20,
 
-	},
 
-	constructor: function(options) {
-		this._origData = this.opt.jsonData;
-		this.targetDiv = this.opt.targetDiv;
-		this._init();
-		this._draw();
+    //Defaults
+    _DEFAULT_FRAME_SIZE: 60,
+    _origData: undefined,
+    _zoomedData: undefined,
 
-	},
+    color_scheme: {
+        colorLow: 'green',
+        colorMed: 'white',
+        colorHigh: 'red',
+    },
 
-	opt: {
-		 /**
+    constructor: function(options) {
+        this._origData = this.opt.jsonData;
+        this.targetDiv = this.opt.targetDiv;
+        this._init();
+        this._draw();
+    },
+    /**
+     * Private: intialize the viewer. overrides defaults with user defined options
+     * @ignore
+     */
+    _init: function() {
+        var tmpCfg = this.color_scheme;
+
+        // read in user defined _config
+        if (this.opt.user_defined_config != 'undefined') {
+            var _tmpUserCfg = this.opt.user_defined_config;
+            ['colorLow', 'configolorHigh', 'colorMed'].forEach(function(entry) {
+                if (tmpCfg[entry])
+                    tmpCfg[entry] = _tmpUserCfg[entry];
+            });
+        }
+
+    },
+    /**
+     * Private: renders the viewer object
+     * @ignore
+     */
+    _draw: function() {
+        // setup canvas
+        var $hmDiv = jQuery("#" + this.opt.targetDiv);
+        [this._MAIN_HEAT_MAP_DIV, this._SCALE_DIV, this._ZOOM_HEAT_MAP_DIV].forEach(function(entry) {
+            $hmDiv.append(jQuery('<div>')
+                .attr('id', entry)
+                .css('width', '95%')
+                .css('margin', '25px'));
+        });
+
+        // Set up and draw main div 
+        this.main_heatmap_cfg = this._getHeatMapCfg(this._origData, this._MAIN_HEAT_MAP_DIV);
+        this._heatmap(this.main_heatmap_cfg, this._origData, this._MAIN_HEAT_MAP_DIV);
+        // Set up scale
+        if (this.opt.showScale)
+            this.SCALE.init({
+                colorLow: this.main_heatmap_cfg.colorLow,
+                colorMid: this.main_heatmap_cfg.colorMed,
+                colorHigh: this.main_heatmap_cfg.colorHigh,
+                scoreLow: this.main_heatmap_cfg.scoreLow,
+                scoreMid: this.main_heatmap_cfg.scoreMed,
+                scoreHigh: this.main_heatmap_cfg.scoreHigh,
+                targetDiv: this._SCALE_DIV
+            });
+
+        // Enable zoom div if labels cannot be shown on the main heatmap
+        if (this.main_heatmap_cfg.dimensions.cell_width < this._MIN_FONT_SIZE) {
+            if (this.opt.show_zoom_panel) { // zoom panel can be forced away by user
+                // show sliding window on main heatmap
+                var $zoom_div_width = jQuery("#" + this._ZOOM_HEAT_MAP_DIV).width();
+                var num_cols_in_zoom = Math.ceil($zoom_div_width / this._MAX_FONT_SIZE);
+                this._zoomedData = this._getZoomedHeatMapData({
+                        start: 0,
+                        end: num_cols_in_zoom
+                    },
+                    this.main_heatmap_cfg.dimensions.row_count
+                );
+                this.zoom_heatmap_cfg = this._getHeatMapCfg(this._zoomedData, this._ZOOM_HEAT_MAP_DIV);
+                this.slider_cfg = jQuery.extend(this.slider_cfg, this._getSliderCfg(this.main_heatmap_cfg, num_cols_in_zoom));
+                this._show_sliding_window(this.slider_cfg);
+                this._heatmap(this.zoom_heatmap_cfg, this._zoomedData, this._ZOOM_HEAT_MAP_DIV);
+            }
+        }
+    },
+
+
+    opt: {
+        /**
          * Default values for the options:
          * targetDIV: "YourOwnDivId",
          * jsonData: {},
@@ -185,16 +214,16 @@ Biojs.HeatmapViewer = Biojs.extend({
          * showExportToImageButton: false,
          * @name Biojs.HeatmapViewer-opt
          */
-		targetDiv: 'YourOwnDivId',
-		jsonData: {},
-		showScale: true,
-		showExportToImageButton: false,
-		show_zoom_panel: true
-	},
+        targetDiv: 'YourOwnDivId',
+        jsonData: {},
+        showScale: true,
+        showExportToImageButton: false,
+        show_zoom_panel: true
+    },
 
-	eventTypes: [
+    eventTypes: [
 
-		/* Event Names
+        /* Event Names
        The parent class Biojs build the event handlers automatically
        with the names defined here. Use this.raiseEvent(<eventName>,
        <eventData>) for triggering an event from this component. Where,
@@ -208,445 +237,409 @@ Biojs.HeatmapViewer = Biojs.extend({
             .
          “<eventNameN>”
      */
-	],
+    ],
 
-	SCALE: (function($) {
-		var data_array = [];
-		var my = {};
-		var dataLow, dataMid, dataHigh;
-		var colorLow, colorMid, colorHigh;
-		var targetDiv;
-		var svg;
-		var d, i;
+    SCALE: (function($) {
+        var data_array = [];
+        var my = {};
+        var dataLow, dataMid, dataHigh;
+        var colorLow, colorMid, colorHigh;
+        var targetDiv;
+        var svg;
+        var d, i;
 
-		var drag = d3.behavior.drag()
-			.on("drag", function(d, i) {
-				d.x += d3.event.dx
-				d3.select(this).attr("transform", function(d, i) {
-					return "translate(" + [d.x] + ",20)"
-				})
-			});
+        var drag = d3.behavior.drag()
+            .on("drag", function(d, i) {
+                d.x += d3.event.dx
+                d3.select(this).attr("transform", function(d, i) {
+                    return "translate(" + [d.x] + ",20)"
+                })
+            });
 
-		/**
-		 * [init description]
-		 * @param  {[type]} _config [description]
-		 * @return {[type]}         [description]
-		 */
-		my.init = function(_config) {
-			var scoreLow = _config.scoreLow;
-			var scoreMid = _config.scoreMid;
-			var scoreHigh = _config.scoreHigh;
-			var colorLow = _config.colorLow;
-			var colorMid = _config.colorMid;
-			var colorHigh = _config.colorHigh;
-			var targetDiv = _config.targetDiv;
+        /**
+         * [init description]
+         * @param  {[type]} _config [description]
+         * @return {[type]}         [description]
+         */
+        my.init = function(_config) {
+            var scoreLow = _config.scoreLow;
+            var scoreMid = _config.scoreMid;
+            var scoreHigh = _config.scoreHigh;
+            var colorLow = _config.colorLow;
+            var colorMid = _config.colorMid;
+            var colorHigh = _config.colorHigh;
+            var targetDiv = _config.targetDiv;
 
-			for (var idx = scoreLow; idx <= scoreHigh; idx++)
-				data_array.push(idx);
+            for (var idx = scoreLow; idx <= scoreHigh; idx++)
+                data_array.push(idx);
 
-			var width = 960,
-				height = 200;
+            var width = 960,
+                height = 200;
 
-			var colorScale = d3.scale.linear()
-				.domain([scoreLow, scoreMid, scoreHigh])
-				.range([colorLow, colorMid, colorHigh]);
+            var colorScale = d3.scale.linear()
+                .domain([scoreLow, scoreMid, scoreHigh])
+                .range([colorLow, colorMid, colorHigh]);
 
-			var x = 50,
-				y = 20;
+            var x = 50,
+                y = 20;
 
-			var svg = d3.select("#" + targetDiv)
-				.append("svg").attr("id", targetDiv + "_svg")
-				.attr("width", "100%")
-			// .attr("width", heatmapviewer_config.heatmap_config.dimensions.canvas_width + heatmapviewer_config.heatmap_config.canvas_margin.right + heatmapviewer_config.heatmap_config.canvas_margin.left)
-			.attr("height", "40");
+            var svg = d3.select("#" + targetDiv)
+                .append("svg").attr("id", targetDiv + "_svg")
+                .attr("width", "100%")
+            // .attr("width", heatmapviewer_config.heatmap_config.dimensions.canvas_width + heatmapviewer_config.heatmap_config.canvas_margin.right + heatmapviewer_config.heatmap_config.canvas_margin.left)
+            .attr("height", "40");
 
-			var g = svg.append("g")
-				.data([{
-					"x": x,
-					"y": y
-				}])
-				.attr("transform", "translate(" + x + ",20)")
-				.call(drag);
+            var g = svg.append("g")
+                .data([{
+                    "x": x,
+                    "y": y
+                }])
+                .attr("transform", "translate(" + x + ",20)")
+                .call(drag);
 
-			g.selectAll("lines")
-				.data(data_array)
-				.enter().append("svg:line")
-				.attr("x1", function(d, i) {
-					return i;
-				})
-				.attr("y1", 0)
-				.attr("x2", function(d, i) {
-					return i;
-				})
-				.attr("y1", 20)
-				.style("stroke", function(d) {
-					return (colorScale(d));
-				})
-				.style("stroke-width", 5);
+            g.selectAll("lines")
+                .data(data_array)
+                .enter().append("svg:line")
+                .attr("x1", function(d, i) {
+                    return i;
+                })
+                .attr("y1", 0)
+                .attr("x2", function(d, i) {
+                    return i;
+                })
+                .attr("y1", 20)
+                .style("stroke", function(d) {
+                    return (colorScale(d));
+                })
+                .style("stroke-width", 5);
 
-			g.append("text")
-				.attr("y", -5)
-				.attr("x", -15)
-				.text(-100)
-				.attr("transform", "translate(0, 0 )");
+            g.append("text")
+                .attr("y", -5)
+                .attr("x", -15)
+                .text(scoreLow)
+                .attr("transform", "translate(0, 0 )");
 
-			var midPt = data_array.length / 2;
-			g.append("text")
-				.attr("class", "caption")
-				.attr("y", -5)
-				.attr("x", midPt - 2)
-				.text(0);
-			var maxPt = data_array.length;
+            var midPt = data_array.length / 2;
+            g.append("text")
+                .attr("class", "caption")
+                .attr("y", -5)
+                .attr("x", midPt - 2)
+                .text(scoreMid);
+            var maxPt = data_array.length;
 
-			g.append("text")
-				.attr("class", "caption")
-				.attr("y", -5)
-				.attr("x", maxPt - 2)
-				.text(100);
-		}
-		return my;
-	}(jQuery)),
+            g.append("text")
+                .attr("class", "caption")
+                .attr("y", -5)
+                .attr("x", maxPt - 2)
+                .text(scoreHigh);
+        }
+        return my;
+    }(jQuery)),
 
-/**
- * Public module that renders a heatmap
- * @param  {[type]} $ [description]
- * @return {[type]}   [description]
- */
-	HEATMAP: (function($) {
-		var svg;
-		var my = {};
+    /**
+     * Public module that renders a heatmap
+     * @param  {[type]} $ [description]
+     * @return {[type]}   [description]
+     */
+    _heatmap: function(_config, _data, _targteDiv) {
+        var svg;
+        var max_font_size = this._MAX_FONT_SIZE,
+            min_font_size = this._MIN_FONT_SIZE;
+        var config = _config;
+        var targetDiv = _targteDiv;
+        var data = _data;
+        var myself = this;
 
-		var max_font_size = 20,
-			min_font_size = 11;
+        var axis_line_stroke_color = "black",
+            axis_line_stroke = 2;
 
-		var jsonData = undefined,
-			targetDiv = undefined;
-
-		var config = {
-			axis_line_stroke: '2',
-			axis_line_stroke_color: '#000',
-			dimensions: {
-				canvas_width: 0,
-				canvas_height: 0,
-				cell_width: 0,
-				cell_height: 0,
-				cell_count: 0,
-				row_count: 0
-			},
-			x_axis: [],
-			y_axis: [],
-			jsonData: {},
-			offset: 0,
-			show_frame: true
-
-		};
-
-		my.setTargetDIV = function(_targetDiv) {
-			targetDiv = _targetDiv;
-			return my;
-		},
-		my.getTargetDIV = function() {
-			return this.targetDiv;
-		}
-		my.init = function(_configObj, _jsonData, _targteDiv) {
-			config = $.extend(config, _configObj);
-			this.setTargetDIV(_targteDiv);
-			jsonData = _jsonData;
-			return my;
-		}
-		getData = function(argument) {
-			return jsonData;
-		}
-	
-		var draw_axis = function() {
-			var d, i;
-			var font_size = Math.min((config.dimensions.cell_width - 10), max_font_size);
-			var myHorizontalAxisLine = svg.append("svg:line")
-				.attr("x1", 0)
-				.attr("y1", 0 - 3)
-				.attr("x2", config.dimensions.cell_width * (config.dimensions.cell_count + 1))
-				.attr("y2", 0 - 3)
-				.style("stroke", config.axis_line_stroke_color)
-				.style("stroke-width", config.axis_line_stroke);
+        var _draw_axis = function() {
+            var d, i;
+            var font_size = Math.min((config.dimensions.cell_width - 10), max_font_size);
+            var myHorizontalAxisLine = svg.append("svg:line")
+                .attr("x1", 0)
+                .attr("y1", 0 - 3)
+                .attr("x2", config.dimensions.cell_width * (config.dimensions.cell_count + 1))
+                .attr("y2", 0 - 3)
+                .style("stroke", axis_line_stroke_color)
+                .style("stroke-width", axis_line_stroke);
 
 
-			var myVerticalAxisLine = svg.append("svg:line")
-				.attr("x1", 0 - 5)
-				.attr("y1", 0)
-				.attr("x2", 0 - 5)
-				.attr("y2", config.dimensions.canvas_height)
-				.style("stroke", config.axis_line_stroke_color)
-				.style("stroke-width", config.axis_line_stroke);
+            var myVerticalAxisLine = svg.append("svg:line")
+                .attr("x1", 0 - 5)
+                .attr("y1", 0)
+                .attr("x2", 0 - 5)
+                .attr("y2", config.dimensions.canvas_height)
+                .style("stroke", axis_line_stroke_color)
+                .style("stroke-width", axis_line_stroke);
 
 
-			svg.selectAll("x_axis").data(config.x_axis).enter().append("text").style("font-size", font_size).text(function(d) {
-				return d;
-			}).attr("x", function(d, i) {
-				return i * config.dimensions.cell_width;
-			}).attr("y", function(d) {
-				return -5;
-			});
+            svg.selectAll("x_axis").data(config.x_axis).enter().append("text").style("font-size", font_size).text(function(d) {
+                return d;
+            }).attr("x", function(d, i) {
+                return i * config.dimensions.cell_width;
+            }).attr("y", function(d) {
+                return -15;
+            });
 
-			// TODO rework positioning 
-			svg.selectAll("y_axis").data(config.y_axis).enter().append("text").style("font-size", font_size).text(function(d) {
-				return d;
-			}).attr("x", function(d) {
-				return (config.canvas_margin.right - 5) * -1;
-			}).attr("y", function(d, i) {
-				return i * config.dimensions.cell_width + config.dimensions.cell_width;
-			});
-		}
-
-		my.draw = function() {
-			draw_heatmap();
-			// present axis only if the computed size for the font is more then the set threshold size
-			if (config.dimensions.cell_width > min_font_size)
-				draw_axis();
-		}
-
-		/**
-		 * [draw_heatmap description]
-		 * @param  {[type]} argument
-		 * @return {[type]}
-		 */
-		var draw_heatmap = function(argument) {
-
-			svg = d3.select("#" + targetDiv)
-				.append("svg").attr("id", targetDiv + "_svg")
-				.attr("width", config.dimensions.canvas_width + config.canvas_margin.right + config.canvas_margin.left)
-				.attr("height", config.dimensions.canvas_height + config.canvas_margin.top + config.canvas_margin.bottom)
-				.append("g")
-				.attr("transform", "translate(" + config.canvas_margin.right + "," + config.canvas_margin.top + ")");
+            // TODO rework positioning 
+            svg.selectAll("y_axis").data(config.y_axis).enter().append("text").style("font-size", font_size).text(function(d) {
+                return d;
+            }).attr("x", function(d) {
+                return -1 * myself._RIGHT_MARGIN;
+            }).attr("y", function(d, i) {
+                return i * config.dimensions.cell_width + config.dimensions.cell_width;
+            });
+        };
 
 
-			var colorScale = d3.scale.linear()
-				.domain([config.scoreLow, config.scoreMed, config.scoreHigh])
-				.range([config.colorLow, config.colorMed, config.colorHigh]);
+        jQuery("#" + targetDiv).empty();
+        svg = d3.select("#" + targetDiv)
+            .append("svg").attr("id", targetDiv + "_svg")
+            .attr("width", config.dimensions.canvas_width + this._RIGHT_MARGIN + this._LEFT_MARGIN)
+            .attr("height", config.dimensions.canvas_height + this._TOP_MARGIN + this._BOTTOM_MARGIN)
+            .append("g")
+            .attr("transform", "translate(" + this._RIGHT_MARGIN + "," + this._TOP_MARGIN + ")");
+
+        var colorScale = d3.scale.linear()
+            .domain([config.scoreLow, config.scoreMed, config.scoreHigh])
+            .range([config.colorLow, config.colorMed, config.colorHigh]);
+        svg.selectAll(".heatmapDiv")
+            .data(data, function(d) {
+                return d.col + ': ' + d.row;
+            })
+            .enter().append("svg:rect")
+            .attr("x", function(d) {
+                return ((d.col - myself.slider_cfg.start_pos) * config.dimensions.cell_width);
+            })
+            .attr("y", function(d) {
+                return d.row * config.dimensions.cell_height;
+            })
+            .attr("width", function(d) {
+                return config.dimensions.cell_width;
+            })
+            .attr("height", function(d) {
+                return config.dimensions.cell_height;
+            })
+            .style("fill", function(d) {
+                if (d.label == d.row_label) return ('black ');
+                else return colorScale(d.score);
+            })
+            .append("svg:title")
+            .text(function(d) {
+                return d.label + d.col + d.row_label + " Score: " + d.score;
+            });
+
+        if (config.dimensions.cell_width > min_font_size)
+            _draw_axis();
+
+    },
+    /**
+     * Private: renders a sliding frame on top of main matrix to show zoomed in area
+     * @param  {Object} _config viewer's configuration
+     * @ignore
+     */
+    _show_sliding_window: function(_config) {
+        var myself = this;
+        var svg = _config.svg;
+        var svg_length = svg.style("width")
+        var drag_stop = _config.drag_stop;
+        var x = y = 0;
+        var d, i;
+        var drag = d3.behavior.drag()
+            .on("dragend", function(d, i) {
+                if (d.x < 0)
+                    d.x = 0;
+                if (d.x > svg_length)
+                    d.x = svg_length;
+                myself._reDrawZoomDiv(d);
+                d3.select(this).style('cursor', '-webkit-grab');
+                d3.select(this).style('cursor', '-moz-grab');
+            })
+            .on("drag", function(d, i) {
+                d.x += d3.event.dx;
+                d.y += d3.event.dy;
+                d3.select(this).attr("transform", function(d, i) {
+                    if (d.x < 0)
+                        return "translate(0)";
+                    if (d.x > drag_stop - _config.frame_width)
+                        return "translate(" + (drag_stop - _config.frame_width + 10) + ")";
+
+                    d3.select(this).style('cursor', '-webkit-grabbing');
+                    d3.select(this).style('cursor', '-moz-grabbing');
+                    return "translate(" + [d.x] + ")";
+                })
+            });
+
+        svg.append("svg:rect")
+            .attr("x", -1 * (_config.cell_width))
+            .attr("y", -5)
+            .attr("width", _config.frame_width)
+            .attr("height", _config.frame_height + 15)
+            .style("fill-opacity", 0)
+            .style("stroke", "blue")
+            .style("stroke-width", 4)
+            .style("cursor", "-webkit-grab")
+            .style("cursor", "-moz-grab")
+            .data([{
+                "x": x,
+            }])
+            .attr("transform", "translate(" + x + "," + y + ")")
+            .call(drag);
+    },
 
 
-			svg.selectAll(".heatmapDiv")
-				.data(getData(), function(d) {
-					return d.col + ': ' + d.row;
-				})
-				.enter().append("svg:rect")
-				.attr("x", function(d) {
-					return (d.col - config.offset) * config.dimensions.cell_width;
-				})
-				.attr("y", function(d) {
-					return d.row * config.dimensions.cell_height;
-				})
-				.attr("width", function(d) {
-					return config.dimensions.cell_width;
-				})
-				.attr("height", function(d) {
-					return config.dimensions.cell_height;
-				})
-				.style("fill", function(d) {
-					if (d.label == d.row_label) return ('black ');
-					else return colorScale(d.score);
-				})
-				.append("svg:title")
-				.text(function(d) {
-					return d.label + d.col + d.row_label + " Score: " + d.score;
-				});
-		}
-		return my;
-	}(jQuery)),
-	/**
-	 * Private: renders a sliding frame on top of main matrix to show zoomed in area
-	 * @param  {Object} _config viewer's configuration 
-	 * @ignore
-	 */
-	_show_sliding_window: function(_config) {
-		var myself = this;
-		var current_x;
-		var dimensions = _config.dimensions;
-		var svg = _config.svg;
-		var max_frame = dimensions.cell_width * dimensions.cell_count - dimensions.frame_width;
-		var x = y = 0;
-		var d, i;
-		var drag = d3.behavior.drag()
-			.on("dragend", function(d, i) {
-				if (d.x < 0)
-					d.x = 0;
-				if (d.x > max_frame)
-					d.x = max_frame;
-				current_x = d.x;
-				myself._drawZoomDiv(d);
-				d3.select(this).style('cursor', '-webkit-grab');
-				d3.select(this).style('cursor', '-moz-grab');
-			})
-			.on("drag", function(d, i) {
-				d.x += d3.event.dx;
-				d.y += d3.event.dy;
-				d3.select(this).attr("transform", function(d, i) {
-					if (d.x < 0)
-						return "translate(0)";
-					if (d.x > max_frame)
-						return "translate(" + (max_frame + 10) + ")";
+    _getHeatMapCfg: function(_data, _targetDiv) {
+        var _heatmap_cfg = {
+            dimensions: {}
+        };
 
-					d3.select(this).style('cursor', '-webkit-grabbing');
-					d3.select(this).style('cursor', '-moz-grabbing');
-					return "translate(" + [d.x] + ")";
-				})
-			});
+        // Get Axis data
+        tmpObj = this._getAxis(_data);
+        _heatmap_cfg.y_axis = tmpObj.y_axis;
+        _heatmap_cfg.x_axis = tmpObj.x_axis;
 
-		svg.append("svg:rect")
-			.attr("x", 0)
-			.attr("y", -5)
-			.attr("width", dimensions.frame_width)
-			.attr("height", dimensions.height + 15)
-			.style("fill-opacity", 0)
-			.style("stroke", "blue")
-			.style("stroke-width", 4)
-			.style("cursor", "-webkit-grab")
-			.style("cursor", "-moz-grab")
-			.data([{
-				"x": x
-			}])
-			.attr("transform", "translate(" + x + "," + y + ")")
-			.call(drag);
-	},
+        // get minimum and maximum score to be used for the scale
+        tmpObj = this._getMinMaxDataPoints(_data);
+        _heatmap_cfg.scoreLow = tmpObj.min;
+        _heatmap_cfg.scoreHigh = tmpObj.max;
+        _heatmap_cfg.scoreMed = tmpObj.med;
+        tmpObj = this._countRowsColumns(_data);
 
-	/**
-	 * Private: renders the viewer object
-	 * @ignore
-	 */
-	_draw: function() {
-		var $hmDiv = jQuery("#" + this.opt.targetDiv);
+        _heatmap_cfg.dimensions.cell_count = tmpObj.num_cols;
+        _heatmap_cfg.dimensions.row_count = tmpObj.num_rows;
+        _heatmap_cfg.dimensions = jQuery.extend(_heatmap_cfg.dimensions, this._calculateHeatmapDimensions(_targetDiv,
+            _heatmap_cfg.dimensions.cell_count, _heatmap_cfg.dimensions.row_count));
+        _heatmap_cfg = jQuery.extend(_heatmap_cfg, this.color_scheme);
+        // _heatmap_cfg.offset = 0;
+        console.log(_heatmap_cfg);
+        return (_heatmap_cfg)
+    },
+    _getSliderCfg: function(config, num_cols_in_zoom) {
+        var svg = d3.select("#" + this._MAIN_HEAT_MAP_DIV + "_svg > g"); // find width of zoom map -- 
+        //  base case cell width should equal _MIN_FONT_SIZE
+        var frame_width = Math.ceil(num_cols_in_zoom * this.main_heatmap_cfg.dimensions.cell_width);
 
-		[this._MAIN_HEAT_MAP_DIV, this._SCALE_DIV, this._ZOOM_HEAT_MAP_DIV].forEach(function(entry) {
-			$hmDiv.append(jQuery('<div>')
-				.attr('id', entry)
-				.css('width', '75%')
-				.css('margin', '25px'));
-		});
-		this.HEATMAP.init(this.viewer_config, this._origData, this._MAIN_HEAT_MAP_DIV).draw();
+        return {
+            cell_count: config.dimensions.cell_count,
+            cell_width: config.dimensions.cell_width,
+            frame_width: frame_width,
+            frame_height: config.dimensions.row_count * config.dimensions.cell_width,
+            drag_stop: config.dimensions.cell_count * config.dimensions.cell_width,
+            svg: svg
+        };
+    },
+    /**
+     * Private: renders a secondary heatmap for a selected region in the data
+     * @param  {Object} d {x:<int>, y:<int> } defines the data range to display
+     * @ignore
+     */
+    _reDrawZoomDiv: function(d) {
+        var start = 0;
+        if (typeof this.main_heatmap_cfg.dimensions.cell_width == 'undefined')
+            throw ('Missing main heatmap cell widh');
 
+        var cell_width = this.main_heatmap_cfg.dimensions.cell_width;
+        if (typeof d !== 'undefined')
+            start = Math.ceil(d.x / cell_width);
+        var end = Math.ceil((d.x + this.slider_cfg.frame_width) / cell_width);
 
-		if (this.opt.showScale)
-			this.SCALE.init({
-				colorLow: this.viewer_config.colorLow,
-				colorMid: this.viewer_config.colorMed,
-				colorHigh: this.viewer_config.colorHigh,
-				scoreLow: this.viewer_config.scoreLow,
-				scoreMid: this.viewer_config.scoreMed,
-				scoreHigh: this.viewer_config.scoreHigh,
-				targetDiv: this._SCALE_DIV
+        this.slider_cfg.start_pos = start;
+        this.slider_cfg.end_pos = end;
 
-			})
+        this._zoomedData = this._getZoomedHeatMapData({
+                start: start,
+                end: end
+            },
+            this.main_heatmap_cfg.dimensions.row_count
+        );
+        this.zoom_heatmap_cfg = this._getHeatMapCfg(this._zoomedData, this._ZOOM_HEAT_MAP_DIV);
+        this._heatmap(this.zoom_heatmap_cfg, this._zoomedData, this._ZOOM_HEAT_MAP_DIV);
+    },
+    /**
+     * Private: automatically calculates:
+     * @return {[Object]}
+     */
+    _calculateHeatmapDimensions: function(_curr_canvas, _cell_count, _row_count) {
+        var _tmp_canvas_width = jQuery("#" + _curr_canvas).width();
+        var _tmpComputedCellSize = (_tmp_canvas_width - this._RIGHT_MARGIN - this._LEFT_MARGIN) / (_cell_count + 1);
+        _tmpComputedCellSize = Math.max(Math.min(_tmpComputedCellSize, this._MAX_CELL_WIDTH), this._MIN_CELL_WIDTH);
+        return {
+            cell_height: _tmpComputedCellSize,
+            cell_width: _tmpComputedCellSize,
+            canvas_height: (_row_count + 1) * _tmpComputedCellSize,
+            canvas_width: _tmp_canvas_width
+        };
+    },
 
-		if (this.viewer_config.dimensions.cell_width < this.viewer_config.labels.min_font_size) {
-			this.viewer_config.main_heatmap.orig_cell_width = this.viewer_config.dimensions.cell_width;
+    /**
+     * Private: counts number of rows,cells in the data
+     * @ignore
+     */
+    _countRowsColumns: function(_data) {
+        var k, v;
+        var tmpMinCol = _data[0].col;
+        var tmpMaxCol = _data[0].col;
+        var tmpRow = 0;
+        jQuery.each(_data, function(k, v) {
+            if (v.row == 0) {
+                if (v.col > tmpMaxCol)
+                    tmpMaxCol = v.col;
+                if (v.col < tmpMinCol)
+                    tmpMinCol = v.col;
+            }
+            if (v.row > tmpRow)
+                tmpRow = v.row;
+        });
+        return {
+            num_cols: tmpMaxCol - tmpMinCol,
+            num_rows: tmpRow
+        };
+    },
+    _getAxis: function(_data) {
+        var myself = this;
+        var x_axis = [],
+            y_axis = [];
 
-			if (this.opt.show_zoom_panel) {
-				this._show_sliding_window({
-					dimensions: {
-						cell_width: this.viewer_config.dimensions.cell_width,
-						cell_count: this.viewer_config.dimensions.cell_count,
-						frame_width: 60 * this.viewer_config.dimensions.cell_width,
-						height: this.viewer_config.dimensions.row_count * this.viewer_config.dimensions.cell_width
-					},
-					svg: d3.select("#" + this._MAIN_HEAT_MAP_DIV + "_svg > g")
-				});
-				this._drawZoomDiv();
-			}
+        jQuery.each(_data, function(k, v) {
+            if (v.row == 0)
+                x_axis.push(v.label);
+            if ((v.col - myself.slider_cfg.start_pos) == 0)
+                y_axis.push(v.row_label);
+        });
+        return ({
+            x_axis: x_axis,
+            y_axis: y_axis
+        });
+    },
+    _getZoomedHeatMapData: function(rangeObj) {
+        var row_count = this.main_heatmap_cfg.dimensions.row_count;
 
-		}
-	},
-	/**
-	 * Private: intialize the viewer. overrides defaults with user defined options
-	 * @ignore
-	 */
-	_init: function() {
-		var tmpData = this._origData;
-		var tmpCfg = this.viewer_config;
-
-		// read in user defined _config
-		if (this.opt.user_defined_config != 'undefined') {
-			var _tmpUserCfg = this.opt.user_defined_config;
-			['colorLow', 'colorHigh', 'colorMed'].forEach(function(entry) {
-				if (tmpCfg[entry])
-					tmpCfg[entry] = _tmpUserCfg[entry];
-			});
-		}
-		this._calcHeatMap({
-			start: 0,
-			end: (tmpData.length / 20) // TODO get number of rows autormatically!
-		});
-	},
-	/**
-	 * Private: renders a secondary heatmap for a selected region in the data
-	 * @param  {Object} d {x:<int>, y:<int> } defines the data range to display
-	 * @ignore
-	 */
-	_drawZoomDiv: function(d) {
-		var start = 0;
-
-		if (typeof d !== 'undefined')
-			start = Math.floor(d.x / this.viewer_config.main_heatmap.orig_cell_width);
-		var end = start + this.viewer_config.slider.increments;
-		this.viewer_config.offset = start;
-
-		this._calcHeatMap({
-			start: start,
-			end: end
-		});
-		var $zoom_div = jQuery('#' + this._ZOOM_HEAT_MAP_DIV);
-		if ($zoom_div) {
-			$zoom_div.empty();
-			this.HEATMAP.init(this.viewer_config, this._zoomedData, this._ZOOM_HEAT_MAP_DIV).draw();
-		}
-	},
-	/**
-	 * Private: Determines cell's size, grid size,
-	 * if rangeObj provided it determines the above only for the data within that range
-	 * populated the x and y axis
-	 * @param  {[Object]} rangeObj {start: <int>, end: <int>}} defines the data range to dislpay (optional)
-	 * @ignore
-	 */
-	_calcHeatMap: function(rangeObj) {
-		var dimensions = {};
-		var x_axis = [];
-		var y_axis = [];
-
-		var jsonData, tmpStart;
-		tmpStart = 0;
-
-		var $hmDiv = jQuery("#" + this.targetDiv);
-		dimensions.canvas_width = $hmDiv.width();
-		if (this._origData) {
-			if (typeof this.opt.jsonData != 'undefined') {
-				jsonData = this._origData.slice(rangeObj.start * 20, rangeObj.end * 20);
-				tmpStart = rangeObj.start;
-			}
-			var tmpCol = 0,
-				tmpRow = 0,
-				i = 0;
-			jQuery.each(jsonData, function(k, v) {
-				if (v.row == 0) {
-					x_axis.push(v.label);
-					if (v.col > tmpCol)
-						tmpCol = v.col;
-				}
-				if ((v.col - tmpStart) == 0)
-					y_axis.push(v.row_label);
-
-				if (v.row > tmpRow)
-					tmpRow = v.row;
-			});
-			dimensions.cell_count = tmpCol - this.viewer_config.offset;
-			dimensions.row_count = tmpRow;
-			var tmpCellSize = Math.max(Math.min(((dimensions.canvas_width - this.viewer_config.canvas_margin.right - this.viewer_config.canvas_margin.left) / (dimensions.cell_count + 1)),
-				this.viewer_config.main_heatmap.max_cell_width), this.viewer_config.main_heatmap.min_cell_width);
-
-			dimensions.cell_height = dimensions.cell_width = tmpCellSize;
-			dimensions.canvas_height = (dimensions.row_count + 1) * dimensions.cell_height;
-			this._zoomedData = jsonData;
-		}
-		this.viewer_config.dimensions = jQuery.extend(true, {}, dimensions);
-		this.viewer_config.x_axis = x_axis;
-		this.viewer_config.y_axis = y_axis;
-		this.viewer_config.slider.increments = Math.floor((dimensions.canvas_width / this.viewer_config.zoom_area.cell_width) - 1);
-	}
+        return (this._origData.slice(rangeObj.start * (row_count + 1),
+            rangeObj.end * (row_count + 1)));
+    },
+    _getMinMaxDataPoints: function(_data) {
+        var min = 0,
+            max = 0;
+        var score_list = new Array();
+        jQuery.each(_data, function(k, v) {
+            if ((v.row == 0) && (v.col == 0)) {
+                min = max = v.score;
+            }
+            if (v.score > max)
+                max = v.score;
+            if (v.score < min)
+                min = v.score;
+            score_list.push(v.score);
+        });
+        var sum = score_list.reduce(function(a, b) {
+            return a + b
+        });
+        var avg = Math.floor(sum / score_list.length);
+        return {
+            min: min,
+            max: max,
+            med: avg
+        };
+    },
 });
