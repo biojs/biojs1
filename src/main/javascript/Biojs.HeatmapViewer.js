@@ -99,7 +99,6 @@ Biojs.HeatmapViewer = Biojs.extend({
     slider_cfg: {
         start_pos: 0,
         end_pos: 0,
-
     },
 
     /**
@@ -109,20 +108,19 @@ Biojs.HeatmapViewer = Biojs.extend({
     _ZOOM_HEAT_MAP_DIV: 'zoom_heatmap_div',
     _SLIDER_DIV: 'slider_heatmap_div',
     _SCALE_DIV: 'scale_div',
-    _RIGHT_MARGIN: 30,
-    _LEFT_MARGIN: 30,
+    _RIGHT_MARGIN: 20,
+    _LEFT_MARGIN: 20,
     _TOP_MARGIN: 30,
     _BOTTOM_MARGIN: 30,
 
     // Boundaries
     _MIN_CELL_WIDTH: 2,
-    _MAX_CELL_WIDTH: 100,
+    _MAX_CELL_WIDTH: 30,
     _MIN_FONT_SIZE: 11,
     _MAX_FONT_SIZE: 20,
 
 
     //Defaults
-    _DEFAULT_FRAME_SIZE: 60,
     _origData: undefined,
     _zoomedData: undefined,
 
@@ -153,7 +151,6 @@ Biojs.HeatmapViewer = Biojs.extend({
                     tmpCfg[entry] = _tmpUserCfg[entry];
             });
         }
-
     },
     /**
      * Private: renders the viewer object
@@ -189,15 +186,16 @@ Biojs.HeatmapViewer = Biojs.extend({
             if (this.opt.show_zoom_panel) { // zoom panel can be forced away by user
                 // show sliding window on main heatmap
                 var $zoom_div_width = jQuery("#" + this._ZOOM_HEAT_MAP_DIV).width();
-                var num_cols_in_zoom = Math.ceil($zoom_div_width / this._MAX_FONT_SIZE);
+                this.slider_cfg.frame_width_cells = Math.ceil($zoom_div_width / this._MAX_FONT_SIZE);
+
                 this._zoomedData = this._getZoomedHeatMapData({
                         start: 0,
-                        end: num_cols_in_zoom
+                        end: this.slider_cfg.frame_width_cells
                     },
                     this.main_heatmap_cfg.dimensions.row_count
                 );
                 this.zoom_heatmap_cfg = this._getHeatMapCfg(this._zoomedData, this._ZOOM_HEAT_MAP_DIV);
-                this.slider_cfg = jQuery.extend(this.slider_cfg, this._getSliderCfg(this.main_heatmap_cfg, num_cols_in_zoom));
+                this.slider_cfg = jQuery.extend(this.slider_cfg, this._getSliderCfg(this.main_heatmap_cfg, this.slider_cfg.frame_width_cells));
                 this._show_sliding_window(this.slider_cfg);
                 this._heatmap(this.zoom_heatmap_cfg, this._zoomedData, this._ZOOM_HEAT_MAP_DIV);
             }
@@ -450,8 +448,9 @@ Biojs.HeatmapViewer = Biojs.extend({
             .on("dragend", function(d, i) {
                 if (d.x < 0)
                     d.x = 0;
-                if (d.x > svg_length)
-                    d.x = svg_length;
+                if (d.x > drag_stop - _config.frame_width_pixels) {
+                    d.x = drag_stop - _config.frame_width_pixels;
+                }
                 myself._reDrawZoomDiv(d);
                 d3.select(this).style('cursor', '-webkit-grab');
                 d3.select(this).style('cursor', '-moz-grab');
@@ -462,8 +461,8 @@ Biojs.HeatmapViewer = Biojs.extend({
                 d3.select(this).attr("transform", function(d, i) {
                     if (d.x < 0)
                         return "translate(0)";
-                    if (d.x > drag_stop - _config.frame_width)
-                        return "translate(" + (drag_stop - _config.frame_width + 10) + ")";
+                    if (d.x > drag_stop - _config.frame_width_pixels)
+                        return "translate(" + (drag_stop - _config.frame_width_pixels) + ")";
 
                     d3.select(this).style('cursor', '-webkit-grabbing');
                     d3.select(this).style('cursor', '-moz-grabbing');
@@ -474,7 +473,7 @@ Biojs.HeatmapViewer = Biojs.extend({
         svg.append("svg:rect")
             .attr("x", -1 * (_config.cell_width))
             .attr("y", -5)
-            .attr("width", _config.frame_width)
+            .attr("width", _config.frame_width_pixels)
             .attr("height", _config.frame_height + 15)
             .style("fill-opacity", 0)
             .style("stroke", "blue")
@@ -511,21 +510,20 @@ Biojs.HeatmapViewer = Biojs.extend({
         _heatmap_cfg.dimensions = jQuery.extend(_heatmap_cfg.dimensions, this._calculateHeatmapDimensions(_targetDiv,
             _heatmap_cfg.dimensions.cell_count, _heatmap_cfg.dimensions.row_count));
         _heatmap_cfg = jQuery.extend(_heatmap_cfg, this.color_scheme);
-        // _heatmap_cfg.offset = 0;
-        console.log(_heatmap_cfg);
         return (_heatmap_cfg)
     },
     _getSliderCfg: function(config, num_cols_in_zoom) {
         var svg = d3.select("#" + this._MAIN_HEAT_MAP_DIV + "_svg > g"); // find width of zoom map -- 
         //  base case cell width should equal _MIN_FONT_SIZE
-        var frame_width = Math.ceil(num_cols_in_zoom * this.main_heatmap_cfg.dimensions.cell_width);
+        var frame_width_pixels = num_cols_in_zoom * this.main_heatmap_cfg.dimensions.cell_width;
+        drag_stop = config.dimensions.cell_count * config.dimensions.cell_width + (4 * config.dimensions.cell_width);
 
         return {
             cell_count: config.dimensions.cell_count,
             cell_width: config.dimensions.cell_width,
-            frame_width: frame_width,
+            frame_width_pixels: frame_width_pixels,
             frame_height: config.dimensions.row_count * config.dimensions.cell_width,
-            drag_stop: config.dimensions.cell_count * config.dimensions.cell_width,
+            drag_stop: drag_stop,
             svg: svg
         };
     },
@@ -542,8 +540,8 @@ Biojs.HeatmapViewer = Biojs.extend({
         var cell_width = this.main_heatmap_cfg.dimensions.cell_width;
         if (typeof d !== 'undefined')
             start = Math.ceil(d.x / cell_width);
-        var end = Math.ceil((d.x + this.slider_cfg.frame_width) / cell_width);
-
+        // var end = Math.ceil((d.x + this.slider_cfg.frame_width_pixels) / cell_width);
+        end = start + this.slider_cfg.frame_width_cells;
         this.slider_cfg.start_pos = start;
         this.slider_cfg.end_pos = end;
 
