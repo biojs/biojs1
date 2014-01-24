@@ -5,19 +5,22 @@
  *
  * Please remember to use jQuery in <a href="http://docs.jquery.com/Using_jQuery_with_Other_Libraries">compatibility mode</a>, particularly a good idea if you use other libraries.
  *
+ * @class
+ * @extends Biojs
+ *
  * @author <a href="mailto:gyachdav@rostlab.org">Guy Yachdav</a>
  * @version 1.0.0
- * @category 0
+ * @category 2
  *
  * @requires <a href='http://code.jquery.com/jquery-1.9.1.min.js'>jQuery Core 1.9.1</a>
  * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/jquery/jquery-1.9.1.min.js"></script>
  *
  * @requires <a href='http://d3js.org/d3.v3.min.js'>D3 Version 3</a>
- * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/jquery/d3.v3.min.js"></script>
+ * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/d3.v3.min.js"></script>
  *
  * @param {Object} options An object with the options for HeatmapViewer component.
  *
- * @option {string} targetDiv
+ * @option {string} target
  *    Identifier of the DIV tag where the component should be displayed.
  *
  * @option {string} jsonData
@@ -61,39 +64,61 @@
  *		}]
  *	</pre>
  *
- * @optional {Onject} user_defined_config
+ * @option {Onject} [user_defined_config={colorLow: 'blue', colorMed: 'white', colorHigh: 'red'}]
  *     Configuration options for the component
  *
- * @optional {Onject} show_zoom_panel
+ * @option {Onject} [show_zoom_panel=true]
  *      Display the zoom panel. default: true
  *
- * @optional {Onject} showScale
+ * @option {Onject} [showScale=true]
  *      Display the scale object. default: true
  *
  * @example
  * var painter = new Biojs.HeatmapViewer({
- *						jsonData: data,
+ *						jsonData:
+ *    		[{
+ *		    "col": 0,
+ *		    "row": 0,
+ *		    "label": "M",
+ *		    "score": 27,
+ *		    "row_label": "A"
+ *		}, {
+ *		    "col": 0,
+ *		    "row": 1,
+ *		    "label": "M",
+ *		    "score": 5,
+ *		    "row_label": "C"
+ *		}, {
+ *		    "col": 1,
+ *		    "row": 0,
+ *		    "label": "M",
+ *		    "score": 43,
+ *		    "row_label": "D"
+ *		}, {
+ *		    "col": 1,
+ *		    "row": 1,
+ *		    "label": "M",
+ *		    "score": 58,
+ *		    "row_label": "E"
+ *		}],
  *						user_defined_config: {
  *							colorLow: 'blue',
  *							colorMed: 'white',
  *							colorHigh: 'red'
  *						},
- *						targetDiv: 'heatmapContainer',
+ *						target: 'YourOwnDivId'
  *				});
  *
- *
- *
- *
- * @class
- * @extends Biojs
  */
 
-Biojs.HeatmapViewer = Biojs.extend({
+Biojs.HeatmapViewer = Biojs.extend(
     /** @lends Biojs.HeatmapViewer */
+    {
+
     /**
      * public variables
      */
-    targetDiv: undefined,
+	target: undefined,
     main_heatmap_cfg: {},
     zoom_heatmap_cfg: {},
     slider_cfg: {
@@ -132,7 +157,7 @@ Biojs.HeatmapViewer = Biojs.extend({
 
     constructor: function(options) {
         this._origData = this.opt.jsonData;
-        this.targetDiv = this.opt.targetDiv;
+        this.target = this.opt.target;
         this._init();
         this._draw();
     },
@@ -158,7 +183,7 @@ Biojs.HeatmapViewer = Biojs.extend({
      */
     _draw: function() {
         // setup canvas
-        var $hmDiv = jQuery("#" + this.opt.targetDiv);
+        var $hmDiv = jQuery("#" + this.opt.target);
         [this._MAIN_HEAT_MAP_DIV, this._SCALE_DIV, this._ZOOM_HEAT_MAP_DIV].forEach(function(entry) {
             $hmDiv.append(jQuery('<div>')
                 .attr('id', entry)
@@ -178,7 +203,7 @@ Biojs.HeatmapViewer = Biojs.extend({
                 scoreLow: this.main_heatmap_cfg.scoreLow,
                 scoreMid: this.main_heatmap_cfg.scoreMed,
                 scoreHigh: this.main_heatmap_cfg.scoreHigh,
-                targetDiv: this._SCALE_DIV
+                target: this._SCALE_DIV
             });
 
         // Enable zoom div if labels cannot be shown on the main heatmap
@@ -206,13 +231,13 @@ Biojs.HeatmapViewer = Biojs.extend({
     opt: {
         /**
          * Default values for the options:
-         * targetDIV: "YourOwnDivId",
+         * target: "YourOwnDivId",
          * jsonData: {},
          * showScale: true,
          * showExportToImageButton: false,
          * @name Biojs.HeatmapViewer-opt
          */
-        targetDiv: 'YourOwnDivId',
+        target: 'YourOwnDivId',
         jsonData: {},
         showScale: true,
         showExportToImageButton: false,
@@ -242,7 +267,7 @@ Biojs.HeatmapViewer = Biojs.extend({
         var my = {};
         var dataLow, dataMid, dataHigh;
         var colorLow, colorMid, colorHigh;
-        var targetDiv;
+        var target;
         var svg;
         var d, i;
 
@@ -266,7 +291,7 @@ Biojs.HeatmapViewer = Biojs.extend({
             var colorLow = _config.colorLow;
             var colorMid = _config.colorMid;
             var colorHigh = _config.colorHigh;
-            var targetDiv = _config.targetDiv;
+            var target = _config.target;
 
             for (var idx = scoreLow; idx <= scoreHigh; idx++)
                 data_array.push(idx);
@@ -281,8 +306,8 @@ Biojs.HeatmapViewer = Biojs.extend({
             var x = 50,
                 y = 20;
 
-            var svg = d3.select("#" + targetDiv)
-                .append("svg").attr("id", targetDiv + "_svg")
+            var svg = d3.select("#" + target)
+                .append("svg").attr("id", target + "_svg")
                 .attr("width", "100%")
             // .attr("width", heatmapviewer_config.heatmap_config.dimensions.canvas_width + heatmapviewer_config.heatmap_config.canvas_margin.right + heatmapviewer_config.heatmap_config.canvas_margin.left)
             .attr("height", "40");
@@ -339,12 +364,12 @@ Biojs.HeatmapViewer = Biojs.extend({
      * @param  {[type]} $ [description]
      * @return {[type]}   [description]
      */
-    _heatmap: function(_config, _data, _targteDiv) {
+    _heatmap: function(_config, _data, _target) {
         var svg;
         var max_font_size = this._MAX_FONT_SIZE,
             min_font_size = this._MIN_FONT_SIZE;
         var config = _config;
-        var targetDiv = _targteDiv;
+        var target = _target;
         var data = _data;
         var myself = this;
 
@@ -391,9 +416,9 @@ Biojs.HeatmapViewer = Biojs.extend({
         };
 
 
-        jQuery("#" + targetDiv).empty();
-        svg = d3.select("#" + targetDiv)
-            .append("svg").attr("id", targetDiv + "_svg")
+        jQuery("#" + target).empty();
+        svg = d3.select("#" + target)
+            .append("svg").attr("id", target + "_svg")
             .attr("width", config.dimensions.canvas_width + this._RIGHT_MARGIN + this._LEFT_MARGIN)
             .attr("height", config.dimensions.canvas_height + this._TOP_MARGIN + this._BOTTOM_MARGIN)
             .append("g")
@@ -488,7 +513,7 @@ Biojs.HeatmapViewer = Biojs.extend({
     },
 
 
-    _getHeatMapCfg: function(_data, _targetDiv) {
+    _getHeatMapCfg: function(_data, _target) {
         var _heatmap_cfg = {
             dimensions: {}
         };
@@ -507,7 +532,7 @@ Biojs.HeatmapViewer = Biojs.extend({
 
         _heatmap_cfg.dimensions.cell_count = tmpObj.num_cols;
         _heatmap_cfg.dimensions.row_count = tmpObj.num_rows;
-        _heatmap_cfg.dimensions = jQuery.extend(_heatmap_cfg.dimensions, this._calculateHeatmapDimensions(_targetDiv,
+        _heatmap_cfg.dimensions = jQuery.extend(_heatmap_cfg.dimensions, this._calculateHeatmapDimensions(_target,
             _heatmap_cfg.dimensions.cell_count, _heatmap_cfg.dimensions.row_count));
         _heatmap_cfg = jQuery.extend(_heatmap_cfg, this.color_scheme);
         return (_heatmap_cfg)
