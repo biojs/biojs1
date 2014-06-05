@@ -52,48 +52,48 @@ Biojs.Rheaction = Biojs.extend (
 /** @lends Biojs.Rheaction# */
 {
     constructor: function (options){
-		//Biojs.console.enable();
-		this.setId(this.opt.id);
+        //Biojs.console.enable();
+        this.setId(this.opt.id);
     },
-	/**
-	 * Sets and displays data for a new identifier.
-	 * @param {string} id The identifier.
-	 * 
-	 * @example 
-	 * instance.setId("RHEA:10280");
-	 * 
-	 * @example 
-	 * instance.setId("10735");
-	 * 
-	 * @example 
-	 * instance.setId("RHEA:18476");
-	 * 
-	 * @example 
-	 * instance.setId("XXXXX");
-	 * 
-	 * @example
-	 * instance.setId("18189");
-	 * 
-	 * @example
-	 * instance.setId("17521");
-	 * 
-	 */
-	setId: function(id){
-		this._clearContent();
+    /**
+     * Sets and displays data for a new identifier.
+     * @param {string} id The identifier.
+     * 
+     * @example 
+     * instance.setId("RHEA:10280");
+     * 
+     * @example 
+     * instance.setId("10735");
+     * 
+     * @example 
+     * instance.setId("RHEA:18476");
+     * 
+     * @example 
+     * instance.setId("XXXXX");
+     * 
+     * @example
+     * instance.setId("18189");
+     * 
+     * @example
+     * instance.setId("17521");
+     * 
+     */
+    setId: function(id){
+        this._clearContent();
         var self = this;
-		var rheaId = id.replace('RHEA:', '');
+        var rheaId = id.replace('RHEA:', '');
         this._rheaIdLabel = 'RHEA_' + rheaId;
         if ( "string" == (typeof this.opt.target) ) {
-			this._container = jQuery( "#" + this.opt.target );
-		} else {
-			this.opt.target = "biojs_Rheaction_" + rheaId;
-			this._container = jQuery('<div id="'+ this.opt.target +'"></div>');
-		}
+            this._container = jQuery( "#" + this.opt.target );
+        } else {
+            this.opt.target = "biojs_Rheaction_" + rheaId;
+            this._container = jQuery('<div id="'+ this.opt.target +'"></div>');
+        }
         this._container.addClass('scrollpane');
         this._reactionRow = jQuery('<div/>',{"class":'reactionRow'});
         this._container.append(this._reactionRow);
-        this._getCml(rheaId);		
-	},
+        this._getCml(rheaId);        
+    },
 
     /** 
      * Default values for the options.
@@ -111,14 +111,14 @@ Biojs.Rheaction = Biojs.extend (
         showChebiId: false,
         showFormulaAndCharge: false
     },
-	
-	_clearContent: function(){
-		jQuery("#" + this.opt.target).html("");
-	},
-	
-	_displayNoDataMessage: function(){
-		jQuery('#'+this.opt.target+'').html(Biojs.Rheaction.MESSAGE_NODATA);
-	},
+    
+    _clearContent: function(){
+        jQuery("#" + this.opt.target).html("");
+    },
+    
+    _displayNoDataMessage: function(){
+        jQuery('#'+this.opt.target+'').html(Biojs.Rheaction.MESSAGE_NODATA);
+    },
 
     /**
      * Toggles the accession numbers of polymers and generics.
@@ -133,7 +133,7 @@ Biojs.Rheaction = Biojs.extend (
      * @example instance.toggleChebiId();
      */
     toggleChebiId: function(){
-    	jQuery('.chebiId').toggle();
+        jQuery('.chebiId').toggle();
     },
 
     /**
@@ -151,58 +151,58 @@ Biojs.Rheaction = Biojs.extend (
         var httpRequest = {
             url: reactionUrl,
             method: 'GET',
-			/** @ignore No need to document this object */
+            /** @ignore No need to document this object */
             success: function(xml){
                 self._dataReceived(xml);
             },
             error: function(qXHR, textStatus, errorThrown){
-				Biojs.console.log("ERROR requesting reaction. Response: "
-						+ textStatus);
-				self._displayNoDataMessage();
+                Biojs.console.log("ERROR requesting reaction. Response: "
+                        + textStatus);
+                self._displayNoDataMessage();
             }
         };
 
-		// Using proxy?
-	   	// Redirect using the proxy and encode all params as url data
-	   	if ( this.opt.proxyUrl != undefined ) {
-	   		 // Redirect to proxy url
-	   		 httpRequest.url = this.opt.proxyUrl;
-	   		 // Encode both url and parameters under the param url
-	   		 httpRequest.data = [{ name: "url", value: reactionUrl }];
-	   		 // Data type 
-	   		 httpRequest.dataType = "text";
-	   	}
+        // Using proxy?
+           // Redirect using the proxy and encode all params as url data
+           if ( this.opt.proxyUrl != undefined ) {
+                // Redirect to proxy url
+                httpRequest.url = this.opt.proxyUrl;
+                // Encode both url and parameters under the param url
+                httpRequest.data = [{ name: "url", value: reactionUrl }];
+                // Data type 
+                httpRequest.dataType = "text";
+           }
 
-		jQuery.ajax(httpRequest);
+        jQuery.ajax(httpRequest);
     },
 
     _dataReceived: function(xml){
         var self = this;
         var data = {};
-		var xmlDoc = "";
+        var xmlDoc = "";
         if (xml.length > 0){
-			try {
-				xmlDoc = jQuery.parseXML(xml);
-				xmlResult = jQuery(xmlDoc).find('reaction');
-	            var reactants = xmlResult.find('reactant');
-	            for (var i = 0; i < reactants.length; i++){
-	                if (i > 0) self._addPlus();
-	                self._addParticipant(reactants[i]);
-	            }
-	            self._addDirection(xmlResult.attr('convention'));
-	            var products = xmlResult.find('product');
-	            for (var i = 0; i < products.length; i++){
-	                if (i > 0) self._addPlus();
-	                self._addParticipant(products[i]);
-	            }
-			} catch (e) {
-				Biojs.console.log("ERROR decoding ");
-				Biojs.console.log(e);
-				self._displayNoDataMessage();
-			}
+            try {
+                xmlDoc = jQuery.parseXML(xml);
+                xmlResult = jQuery(xmlDoc).find('reaction');
+                var reactants = xmlResult.find('reactant');
+                for (var i = 0; i < reactants.length; i++){
+                    if (i > 0) self._addPlus();
+                    self._addParticipant(reactants[i]);
+                }
+                self._addDirection(xmlResult.attr('convention'));
+                var products = xmlResult.find('product');
+                for (var i = 0; i < products.length; i++){
+                    if (i > 0) self._addPlus();
+                    self._addParticipant(products[i]);
+                }
+            } catch (e) {
+                Biojs.console.log("ERROR decoding ");
+                Biojs.console.log(e);
+                self._displayNoDataMessage();
+            }
         }
     },
-	
+    
 
     _addPlus: function(){
         jQuery('<div/>', { "class": 'direction', html: '+' })
@@ -236,27 +236,27 @@ Biojs.Rheaction = Biojs.extend (
      * @param chebiId If any, it generates a link to ChEBI.
      */
     _getCoefNameElement: function(coef, name, accession, chebiId){
-    	var coefNameElem = jQuery('<div/>', { "class": 'coefName' });
+        var coefNameElem = jQuery('<div/>', { "class": 'coefName' });
         if (coef > 1){
-        	coefNameElem.append(jQuery('<span/>', {
-        		"class": 'stoichCoef',
-        		html: coef
-    		}));
+            coefNameElem.append(jQuery('<span/>', {
+                "class": 'stoichCoef',
+                html: coef
+            }));
         }
         var nameElem;
-    	if (chebiId){
-    		nameElem = jQuery('<a/>', {
-        		href: this.opt.chebiUrl + chebiId,
-        		html: name
-        	});
+        if (chebiId){
+            nameElem = jQuery('<a/>', {
+                href: this.opt.chebiUrl + chebiId,
+                html: name
+            });
         } else {
-        	nameElem = jQuery('<span/>', {
-        		"class": 'compoundName',
-        		html: name,
-        		title: accession
-    		});
+            nameElem = jQuery('<span/>', {
+                "class": 'compoundName',
+                html: name,
+                title: accession
+            });
         }
-    	coefNameElem.append(nameElem);
+        coefNameElem.append(nameElem);
         return coefNameElem;
     },
     
@@ -264,26 +264,26 @@ Biojs.Rheaction = Biojs.extend (
      * Builds an HTML element for the compound accession.
      * @param accession The compound accession (prefix included).
      * @param chebiId The ChEBI ID, if any, without 'CHEBI:' prefix.
-     * 		Generates a link to ChEBI.
+     *         Generates a link to ChEBI.
      * @return the HTML element.
      */
     _getCompoundAccessionElement: function(accession, chebiId){
-    	var compoundAccElem;
+        var compoundAccElem;
         if (chebiId){
-        	compoundAccElem = jQuery('<div/>', {
+            compoundAccElem = jQuery('<div/>', {
                 "class": 'chebiId',
                 css: { display: this.opt.showChebiId? 'inline' : 'none' }
             }).append(jQuery('<a/>', {
-        		href: this.opt.chebiUrl + chebiId,
+                href: this.opt.chebiUrl + chebiId,
                 html: accession
             }));
         } else {
-        	compoundAccElem = jQuery('<div/>', {
+            compoundAccElem = jQuery('<div/>', {
                 "class": 'accession',
                 html: accession,
                 css: { display: this.opt.showCompoundAccession?
-                		'inline' : 'none'
-    			}
+                        'inline' : 'none'
+                }
             });
         }
         return compoundAccElem;
@@ -292,53 +292,53 @@ Biojs.Rheaction = Biojs.extend (
     /**
      * Builds an HTML image element for a compound.
      * @param chebiId the ChEBI ID of the compound to show, <b>with</b> the
-     * 		'CHEBI:' prefix. Only one of <code>chebiId</code> or
-     * 		<code>polymerId</code> should be provided, the latter having
-     * 		priority.
+     *         'CHEBI:' prefix. Only one of <code>chebiId</code> or
+     *         <code>polymerId</code> should be provided, the latter having
+     *         priority.
      * @param polymerId the ID (internal to Rhea) of the polymer to show,
-     * 		without the 'POLYMER:' prefix.
+     *         without the 'POLYMER:' prefix.
      * @param accession the compound accession, including the prefix.
      * @return the image element.
      */
     _getCompoundImage: function(chebiId, polymerId, accession){
         var imgUrl = this.opt.compoundImgUrl
-        	+ 'dimensions=' + this.opt.dimensions;
+            + 'dimensions=' + this.opt.dimensions;
         if (polymerId){
-        	imgUrl += '&polymerId=' + polymerId;
+            imgUrl += '&polymerId=' + polymerId;
         } else if (chebiId){
-        	imgUrl += '&chebiId=' + chebiId;
+            imgUrl += '&chebiId=' + chebiId;
         };
-		return jQuery('<img/>', {
-		        src: imgUrl,
-		        "class": 'compoundStructure',
-		        title: accession,
-		        css: { minWidth: this.opt.dimensions + 'px' }
-		});
+        return jQuery('<img/>', {
+                src: imgUrl,
+                "class": 'compoundStructure',
+                title: accession,
+                css: { minWidth: this.opt.dimensions + 'px' }
+        });
     },
     
     _getFormulaElement: function(formula){
-    	return jQuery('<div/>', {
+        return jQuery('<div/>', {
             "class": 'formula',
             html: "<i>Formula:</i> "
-            	+ (formula? formula.replace(/ 1 | 1$| (?!1 )/g,'') : 'N/A'),
+                + (formula? formula.replace(/ 1 | 1$| (?!1 )/g,'') : 'N/A'),
             css: { display: this.opt.showFormulaAndCharge? 'inline' : 'none' }
         });
     },
     
     _getChargeElement: function(charge){
-    	return jQuery('<div/>', {
+        return jQuery('<div/>', {
             "class": 'charge',
             html: '<i>Charge:</i> ' + (charge? charge : 'N/A'),
             css: { display: this.opt.showFormulaAndCharge? 'inline' : 'none' }
         });
-	},
-	
-	_getPositionElement: function(position){
-    	return jQuery('<div/>', {
+    },
+    
+    _getPositionElement: function(position){
+        return jQuery('<div/>', {
             "class": 'position',
             html: '<i>Position:</i> ' + (position? position : 'N/A')
         });
-	},
+    },
     
     /**
      * Builds an HTML element for a macromolecule residue.
@@ -346,24 +346,24 @@ Biojs.Rheaction = Biojs.extend (
      * @return the HTML element for the residue.
      */
     _getResidueElement: function(residue){
-		var resFormula = residue.attr('formula');
-		var resCharge = residue.attr('formalCharge');
-		var resName = residue.find('name').contents()[0].data;
-		var resId = residue.find('identifier').attr('value');
-		var resChebiId = resId.replace('CHEBI:', '');
-		var resPos = residue.find('label[objectClass="location"]')
-				.attr('value');
-		var resElem = jQuery('<div/>', {
-			"class": 'residue'
-		}).append(
-			this._getCompoundImage(resId, null, resId),
-			this._getCoefNameElement(1, resName, resId, resChebiId),
-			this._getCompoundAccessionElement(resId, resChebiId),
-			this._getFormulaElement(resFormula),
-			this._getChargeElement(resCharge),
-			this._getPositionElement(resPos)
-		);
-		return resElem;
+        var resFormula = residue.attr('formula');
+        var resCharge = residue.attr('formalCharge');
+        var resName = residue.find('name').contents()[0].data;
+        var resId = residue.find('identifier').attr('value');
+        var resChebiId = resId.replace('CHEBI:', '');
+        var resPos = residue.find('label[objectClass="location"]')
+                .attr('value');
+        var resElem = jQuery('<div/>', {
+            "class": 'residue'
+        }).append(
+            this._getCompoundImage(resId, null, resId),
+            this._getCoefNameElement(1, resName, resId, resChebiId),
+            this._getCompoundAccessionElement(resId, resChebiId),
+            this._getFormulaElement(resFormula),
+            this._getChargeElement(resCharge),
+            this._getPositionElement(resPos)
+        );
+        return resElem;
     },
 
     _addParticipant: function(participant){
@@ -377,40 +377,40 @@ Biojs.Rheaction = Biojs.extend (
         var chebiId = undefined;
         var polymerId = undefined;
         if (moleculeId.lastIndexOf('CHEBI:', 0) === 0){
-    		chebiId = moleculeId.replace('CHEBI:', '');
+            chebiId = moleculeId.replace('CHEBI:', '');
         } else if (moleculeId.lastIndexOf('POLYMER:', 0) === 0){
-        	polymerId = moleculeId.replace('POLYMER:', '');
+            polymerId = moleculeId.replace('POLYMER:', '');
         }
 
         var compDiv = jQuery('<div/>', { "class": 'compound' });
         this._reactionRow.append(compDiv);
 
         compDiv.append(
-    		this._getCoefNameElement(coef, compoundName, moleculeId,
-    				chebiId),
-        	this._getCompoundAccessionElement(moleculeId, chebiId),
-        	this._getFormulaElement(formula),
-        	this._getChargeElement(charge)
-    	);
+            this._getCoefNameElement(coef, compoundName, moleculeId,
+                    chebiId),
+            this._getCompoundAccessionElement(moleculeId, chebiId),
+            this._getFormulaElement(formula),
+            this._getChargeElement(charge)
+        );
         if (chebiId){
-		    compDiv.append(
-	    		this._getCompoundImage(moleculeId, null, moleculeId));
+            compDiv.append(
+                this._getCompoundImage(moleculeId, null, moleculeId));
         } else if (polymerId){
-        	var chebiPolId = molecule.find('molecule').find('identifier')
-        			.attr('value');
-        	compDiv.append(
-    			this._getCompoundAccessionElement(chebiPolId, chebiPolId),
-	    		this._getCompoundImage(null, polymerId, moleculeId)
-    		);
+            var chebiPolId = molecule.find('molecule').find('identifier')
+                    .attr('value');
+            compDiv.append(
+                this._getCompoundAccessionElement(chebiPolId, chebiPolId),
+                this._getCompoundImage(null, polymerId, moleculeId)
+            );
         } else { // GENERIC
-        	var resRow = jQuery('<div>', { "class": 'residues' });
-        	compDiv.append(resRow);
-        	molecule.find('molecule').each(function(index, res){
-        		resRow.append(self._getResidueElement(jQuery(res)));
-        	});
+            var resRow = jQuery('<div>', { "class": 'residues' });
+            compDiv.append(resRow);
+            molecule.find('molecule').each(function(index, res){
+                resRow.append(self._getResidueElement(jQuery(res)));
+            });
         }
     }
 },{
-	MESSAGE_NODATA: "Sorry, no results for your request",
+    MESSAGE_NODATA: "Sorry, no results for your request",
 });
 
