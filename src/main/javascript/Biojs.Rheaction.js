@@ -2,19 +2,19 @@
  * BioJS component to display Rhea reactions.
  * @class
  * @extends Biojs
- * 
+ *
  * @author <a href="mailto:rafael.alcantara@ebi.ac.uk">Rafael Alcántara</a>
  * @version 1.1.0
  * @category 3
- * 
+ *
  * @requires <a href=''>Server side proxy</a>
- * 
+ *
  * @requires <a href='http://blog.jquery.com/2011/09/12/jquery-1-6-4-released/'>jQuery Core 1.6.4</a>
  * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/jquery/jquery-1.6.4.js"></script>
- * 
+ *
  * @requires <a href='../biojs/css/Rheaction.css'>Rheaction.css</a>
  * @dependency <link href="../biojs/css/biojs.Rheaction.css" rel="stylesheet" type="text/css" />
- * 
+ *
  * @param {Object} options An object with the options for the component.
  *
  * @option {string} target
@@ -27,15 +27,15 @@
  *  The dimensions of compound structure images (side of the square) in pixels.
  *
  * @option {string} [proxyUrl='../biojs/dependencies/proxy/proxy.php']
- *  This component needs to request data from a web service. To bypass the same origin policy 
- *  (http://en.wikipedia.org/wiki/Same_origin_policy) this component needs a proxy.  
- *  You could use your own proxy by modifying this value or one of the BioJS proxies: 
+ *  This component needs to request data from a web service. To bypass the same origin policy
+ *  (http://en.wikipedia.org/wiki/Same_origin_policy) this component needs a proxy.
+ *  You could use your own proxy by modifying this value or one of the BioJS proxies:
  *  '../biojs/dependencies/proxy/proxy.php' or '../biojs/dependencies/proxy/proxy.jsp'
- *  
+ *
  *  @option {boolean} [showCompoundAccession=false]
  *  Show the Rhea accession of every compound? This only applies to
  *  macromolecules ('GENERIC:' prefix) and polymers ('POLYMER:' prefix).
- *  
+ *
  *  @option {boolean} [showChebiId=false]
  *  Show the ID of every ChEBI compound?
  *
@@ -58,25 +58,25 @@ Biojs.Rheaction = Biojs.extend (
     /**
      * Sets and displays data for a new identifier.
      * @param {string} id The identifier.
-     * 
-     * @example 
+     *
+     * @example
      * instance.setId("RHEA:10280");
-     * 
-     * @example 
+     *
+     * @example
      * instance.setId("10735");
-     * 
-     * @example 
+     *
+     * @example
      * instance.setId("RHEA:18476");
-     * 
-     * @example 
+     *
+     * @example
      * instance.setId("XXXXX");
-     * 
+     *
      * @example
      * instance.setId("18189");
-     * 
+     *
      * @example
      * instance.setId("17521");
-     * 
+     *
      */
     setId: function(id){
         this._clearContent();
@@ -92,10 +92,10 @@ Biojs.Rheaction = Biojs.extend (
         this._container.addClass('scrollpane');
         this._reactionRow = jQuery('<div/>',{"class":'reactionRow'});
         this._container.append(this._reactionRow);
-        this._getCml(rheaId);        
+        this._getCml(rheaId);
     },
 
-    /** 
+    /**
      * Default values for the options.
      * @name Biojs.Rheaction-opt
      */
@@ -111,11 +111,11 @@ Biojs.Rheaction = Biojs.extend (
         showChebiId: false,
         showFormulaAndCharge: false
     },
-    
+
     _clearContent: function(){
         jQuery("#" + this.opt.target).html("");
     },
-    
+
     _displayNoDataMessage: function(){
         jQuery('#'+this.opt.target+'').html(Biojs.Rheaction.MESSAGE_NODATA);
     },
@@ -127,7 +127,7 @@ Biojs.Rheaction = Biojs.extend (
     toggleAccession: function(){
         jQuery('.accession').toggle();
     },
-    
+
     /**
      * Toggles the ChEBI IDs of compounds.
      * @example instance.toggleChebiId();
@@ -169,7 +169,7 @@ Biojs.Rheaction = Biojs.extend (
                 httpRequest.url = this.opt.proxyUrl;
                 // Encode both url and parameters under the param url
                 httpRequest.data = [{ name: "url", value: reactionUrl }];
-                // Data type 
+                // Data type
                 httpRequest.dataType = "text";
            }
 
@@ -202,7 +202,7 @@ Biojs.Rheaction = Biojs.extend (
             }
         }
     },
-    
+
 
     _addPlus: function(){
         jQuery('<div/>', { "class": 'direction', html: '+' })
@@ -226,7 +226,7 @@ Biojs.Rheaction = Biojs.extend (
         jQuery('<div/>', { "class": 'direction', html: dirLabel })
                 .appendTo(this._reactionRow);
     },
-    
+
     /**
      * Builds an HTML element for the compound name and stoichiometric
      * coefficient.
@@ -259,7 +259,7 @@ Biojs.Rheaction = Biojs.extend (
         coefNameElem.append(nameElem);
         return coefNameElem;
     },
-    
+
     /**
      * Builds an HTML element for the compound accession.
      * @param accession The compound accession (prefix included).
@@ -288,7 +288,7 @@ Biojs.Rheaction = Biojs.extend (
         }
         return compoundAccElem;
     },
-    
+
     /**
      * Builds an HTML image element for a compound.
      * @param chebiId the ChEBI ID of the compound to show, <b>with</b> the
@@ -315,7 +315,7 @@ Biojs.Rheaction = Biojs.extend (
                 css: { minWidth: this.opt.dimensions + 'px' }
         });
     },
-    
+
     _getFormulaElement: function(formula){
         return jQuery('<div/>', {
             "class": 'formula',
@@ -324,7 +324,7 @@ Biojs.Rheaction = Biojs.extend (
             css: { display: this.opt.showFormulaAndCharge? 'inline' : 'none' }
         });
     },
-    
+
     _getChargeElement: function(charge){
         return jQuery('<div/>', {
             "class": 'charge',
@@ -332,14 +332,14 @@ Biojs.Rheaction = Biojs.extend (
             css: { display: this.opt.showFormulaAndCharge? 'inline' : 'none' }
         });
     },
-    
+
     _getPositionElement: function(position){
         return jQuery('<div/>', {
             "class": 'position',
             html: '<i>Position:</i> ' + (position? position : 'N/A')
         });
     },
-    
+
     /**
      * Builds an HTML element for a macromolecule residue.
      * @param residue the molecule element representing the residue.
