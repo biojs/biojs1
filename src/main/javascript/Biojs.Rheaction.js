@@ -104,9 +104,9 @@ Biojs.Rheaction = Biojs.extend (
         id: undefined,
         dimensions: '200',
         proxyUrl: '../biojs/dependencies/proxy/proxy.php',
-        rheaWsUrl: 'http://wwwdev.ebi.ac.uk/rhea/rest/1.0/ws/reaction/cmlreact/', // XXX
+        rheaWsUrl: 'http://www.ebi.ac.uk/rhea/rest/1.0/ws/reaction/cmlreact/',
         chebiUrl: 'http://www.ebi.ac.uk/chebi/searchId.do?chebiId=',
-        compoundImgUrl: 'http://wwwdev.ebi.ac.uk/rhea/compoundImage.xhtml?', // XXX
+        compoundImgUrl: 'http://www.ebi.ac.uk/rhea/compoundImage.xhtml?',
         showCompoundAccession: false,
         showChebiId: false,
         showFormulaAndCharge: false
