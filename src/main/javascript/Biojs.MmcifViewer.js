@@ -11,15 +11,9 @@
  * 
  * @param {Object} options An object with the options for MmcifViewer component.
  *    
- * @requires <a href='http://code.jquery.com/jquery-1.4.2.min.js'>jQuery Core 1.4.2</a>
- * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/jquery/jquery-1.4.2.min.js"></script>
- *
- * @requires <a href='http://datatables.net'>jQuery data tables 1.9.4</a>
- * @dependency <script language="JavaScript" type="text/javascript" src="../biojs/dependencies/jquery/dataTables/DataTables-1.9.4/media/js/jquery.dataTables.js"></script>
- * @dependency <link rel="stylesheet" href="../biojs/dependencies/jquery/dataTables/DataTables-1.9.4/media/css/demo_table.css"></link>
  *    
  * @example 
- * var instance = new Biojs.MmcifViewer({
+ * var myview = new Biojs.MmcifViewer({
  *     divid:"YourOwnDivId",     pdbid:"1cbs"
  * });	
  * 
@@ -37,15 +31,28 @@ Biojs.MmcifViewer = Biojs.extend (
   
 	constructor: function (options) {
 		var self = this;
-		self.mmcif_url = 'http://puck.ebi.ac.uk:4000/mmcif';
-		self.mmcif_url = 'http://wwwdev.ebi.ac.uk/pdbe/widgets/topology'; // temporary entry to mmcif parsing backend
 		// make the top table with all categories listed
-		jQuery("#"+options.divid).html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="catlistTable"></table><br><br><hr><br><br> <table cellpadding="0" cellspacing="0" border="0" class="display" id="categoryTable"></table><br>' );
+		//jQuery("#"+options.divid).html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="catlistTable"></table><br><br><hr><br><br> <table cellpadding="0" cellspacing="0" border="0" class="display" id="categoryTable"></table><br>' );
+		//jQuery("#"+options.divid).html( '\
+			//<table><tr><td width=400px>\
+			//<table cellpadding="0" cellspacing="0" border="0" class="display" id="catlistTable"></table>\
+			//</td><td width=600px>\
+			//<table cellpadding="0" cellspacing="0" border="0" class="display" id="categoryTable"></table><br>\
+			//</td></tr></table>\
+		//');
+		jQuery("#"+options.divid).html( '\
+			<span style="width:400px;height:800px;overflow:auto;float:left;">\
+			<table cellpadding="0" cellspacing="0" border="0" class="display" id="catlistTable"></table>\
+			</span>\
+			<span style="width:800px;height:800px;overflow:auto;float:left;">\
+			<table cellpadding="0" cellspacing="0" border="0" class="display" id="categoryTable"></table><br>\
+			</span>\
+		');
 		self.pdbid = options.pdbid;
 		self.catable = null;
 		jQuery.ajax({
-			url: self.mmcif_url,
-			data: {'varname':'catlist', 'pdbid':self.pdbid, 'mmcif_data':"yes", "categories":1},
+			url: 'http://puck.ebi.ac.uk:4000/mmcif/'+self.pdbid+'/categories',
+			data: {'varname':'catlist'},
 			dataType: 'script',
 			crossDomain: 'true',
 			type: 'GET',
@@ -57,8 +64,12 @@ Biojs.MmcifViewer = Biojs.extend (
 		var self = this;
 		for(var ci=0; ci < catlist.length; ci++) catlist[ci] = [catlist[ci]];
  		var dtable = jQuery('#catlistTable').dataTable( {
-        	"aaData": catlist,
-        	"aoColumns": [ { "sTitle": "Categories" } ]
+			"bScrollCollapse":false,
+			"bAutoWidth":false,
+			"bLengthChange":false,
+			"sScrollX":"200px",
+			"sScrollY":"400px",
+        	"aaData": catlist, "aoColumns": [ { "sTitle": "Categories" } ]
 		} );
 		dtable.$('td').click( function () {
 			var sData = dtable.fnGetData( this );
@@ -73,8 +84,8 @@ Biojs.MmcifViewer = Biojs.extend (
 		var self = this;
 		console.log( 'Start showing category '+catname );
 		jQuery.ajax({
-			url: self.mmcif_url,
-			data: {'varname':'catinfo', "pdbid":self.pdbid, "category":catname, 'mmcif_data':"yes", "categoryData":1},
+			url: 'http://puck.ebi.ac.uk:4000/mmcif/'+self.pdbid+'/'+catname,
+			data: {'varname':'catinfo'},
 			dataType: 'script',
 			crossDomain: 'true',
 			type: 'GET',
@@ -101,7 +112,8 @@ Biojs.MmcifViewer = Biojs.extend (
 		if(self.catable!=null) { self.catable.fnDestroy(); jQuery("#categoryTable").html(""); }
 		//self.catable = null;
  		self.catable = jQuery('#categoryTable').dataTable( {
-        	"aaData": rows, "aoColumns": colinfo, bDestroy:true //, "bRetrieve": true, "bDestroy": true
+        	"aaData": rows, "aoColumns": colinfo, bDestroy:true,
+			"bAutoWidth":false
 		} );
 	},
 
@@ -110,6 +122,39 @@ Biojs.MmcifViewer = Biojs.extend (
    * @name Biojs.MmcifViewer-eventTypes
    */
   eventTypes : [
+	/**
+	 * @name Biojs.MmcifViewer#onClick
+	 * @event
+	 * @param {function} actionPerformed A function which receives an {@link Biojs.Event} object as argument.
+	 * @eventData {Object} source The component which did triggered the event.
+	 * @eventData {string} type The name of the event.
+	 * @eventData {int} selected Selected character.
+	 * @example 
+	 * instance.onClick(
+	 *    function( objEvent ) {
+	 *       alert("The character " + objEvent.selected + " was clicked.");
+	 *    }
+	 * ); 
+	 * 
+	 * */
+	 "onClick",
+	 
+	/**
+	 * @name Biojs.MmcifViewer#onHelloSelected
+	 * @event
+	 * @param {function} actionPerformed A function which receives an {@link Biojs.Event} object as argument.
+	 * @eventData {Object} source The component which did triggered the event.
+	 * @eventData {string} type The name of the event.
+	 * @eventData {int} textSelected Selected text, will be 'Hello' obviously.
+	 * @example 
+	 * instance.onHelloSelected(
+	 *    function( objEvent ) {
+	 *       alert("The word " + objEvent.textSelected + " was selected.");
+	 *    }
+	 * ); 
+	 * 
+	 * */
+     "onHelloSelected"      
   ] 
 });
 
