@@ -1,0 +1,2260 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <title>PDBvalidationWidgets - Test</title>
+    <!--JQuery LIb and CSS -->
+    <!-- <script src="../../main/resources/dependencies/jquery/jquery-1.7.2.min.js" type="text/javascript"></script> -->
+ 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="../../main/resources/dependencies/jquery/jquery-ui-1.10.3.custom/development-bundle/themes/base/jquery.ui.all.css"></link>
+
+    <script src="../../main/resources/dependencies/jquery/fancytree/jquery.fancytree-all.min.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="../../main/resources/dependencies/jquery/fancytree/skin-win7/ui.fancytree.css"></link>
+
+
+    <script type="text/javascript">
+        jQuery.noConflict();
+    </script>
+    <!--END JQuery LIb and CSS -->
+
+    <!-- Highcharts LIB -->
+	<!-- <script type="text/javascript" src="http://www.ebi.ac.uk/pdbe/entry/highcharts/highcharts.js"></script> -->
+	<!-- <script type="text/javascript" src="http://www.ebi.ac.uk/pdbe/entry/highcharts/modules/exporting.js"></script> -->
+	<script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
+	<script type="text/javascript" src="http://code.highcharts.com/highcharts-more.js"></script>
+	<!-- <script type="text/javascript" src="http://code.highcharts.com/modules/exporting.js"></script> -->
+
+    <!-- RAPHAËL LIB -->
+    <script src="../../main/resources/dependencies/graphics/raphael-2.1.0.js" type="text/javascript" charset="utf-8"></script>
+
+    <!-- range slider -->
+	<script src="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/jQAllRangeSliders-withRuler-min.js"></script>
+	<link rel="stylesheet" id="themeCSS" href="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/../css/classic.css">
+	<link rel="stylesheet"               href="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/lib/jquery-ui/css/smoothness/jquery-ui-1.8.10.custom.css">
+
+
+    <!-- This is for PDBxrayValidTables -->
+	<script language="JavaScript" type="text/javascript" src="http://www.datatables.net/release-datatables/media/js/jquery.dataTables.js"></script>
+
+
+    <!-- BIOJS LIB and CSS -->
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.RaphaelCanvas.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBcolourFactory.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBJqueryTopics.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBdatabroker.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBramaViewer.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBentryTree.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDB3dviewer.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBxrayValidTables.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBvalidationPercentileChart.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBvalidSeqviewer.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBsequenceViewer.js"></script>
+
+	<style>
+	.pdbseqview_leftlabelcol { float:left; }
+	.pdbseqview_trackcol { float:left; }
+	.pdbseqview_rightlabelcol { float:left; }
+	</style>
+
+
+    <script>
+	function showWidgets() {
+		var pid  = document.getElementById("pdbid").value;
+		jQuery('#atable').remove();
+		jQuery("#parentdiv").append( "\
+			<table id='atable'><tr><td>\
+			<div style='border:2px solid black;width:400px;height:200px;' id='treediv'></div>\
+				<div style='border:2px solid black;width:400px;height:200px;' id='percentilediv'></div>\
+			</td><td>\
+			<div style='border:0px solid black;width:400px;height:400px;' id='ramadiv'></div>\
+			</td>\
+			</tr>\
+			<tr>\
+				<td><div style='border:2px solid black;width:400px;height:400px;' id='mol3div'></div></td>\
+				<td>\
+<div></div>\
+<div></div>\
+<div style='border:2px solid black;width:400px;height:400px;' id='seqdiv'></div>\
+</td>\
+			</tr>\
+			</tr></table>\
+		" );
+// {{{ apidata
+var apidata = {
+    "/pdb/entry/summary/1cbs": {
+        "1cbs": [
+            {
+                "method_class": "x-ray",
+                "title": "CRYSTAL STRUCTURE OF CELLULAR RETINOIC-ACID-BINDING PROTEINS I AND II IN COMPLEX WITH ALL-TRANS-RETINOIC ACID AND A SYNTHETIC RETINOID",
+                "revised": "24-Feb-2009",
+                "split_entry": null,
+                "released": "26-Jan-1995",
+                "depositors": [
+                    "Bergfors, T.",
+                    "Jones, T.A.",
+                    "Kleywegt, G.J."
+                ],
+                "deposited": "28-Sep-1994",
+                "method": "x-ray diffraction"
+            }
+        ]
+    },
+    "/pdb/entry/entities/1cbs": {
+        "1cbs": [
+            {
+                "entity_id": 2,
+                "in_struct_asyms": [
+                    "B"
+                ],
+                "description": "RETINOIC ACID",
+                "sample_prep_method": "syn",
+                "length": 0,
+                "chem_comp_ids": [
+                    "REA"
+                ],
+                "num_copies": 1,
+                "in_chains": [
+                    "A"
+                ],
+                "polymer_type": "B",
+                "type": "b",
+                "num_groups": 1
+            },
+            {
+                "scientific_organism_name": "Homo sapiens",
+                "entity_id": 1,
+                "in_struct_asyms": [
+                    "A"
+                ],
+                "description": "CELLULAR RETINOIC ACID BINDING PROTEIN TYPE II",
+                "sequence": "PNFSGNWKIIRSENFEELLKVLGVNVMLRKIAVAAASKPAVEIKQEGDTFYIKTSTTVRTTEINFKVGEEFEEQTVDGRPCKSLVKWESENKMVCEQKLLKGEGPKTSWTRELTNDGELILTMTADDVVCTRVYVRE",
+                "sample_prep_method": "man",
+                "length": 137,
+                "num_copies": 1,
+                "in_chains": [
+                    "A"
+                ],
+                "polymer_type": "P",
+                "type": "p",
+                "num_groups": 137,
+                "tax_id": 9606
+            },
+            {
+                "entity_id": 3,
+                "in_struct_asyms": [
+                    "C"
+                ],
+                "description": "water",
+                "sample_prep_method": "nat",
+                "length": 0,
+                "chem_comp_ids": [
+                    "HOH"
+                ],
+                "num_copies": 100,
+                "in_chains": [
+                    "A"
+                ],
+                "polymer_type": "W",
+                "type": "w",
+                "num_groups": 100
+            }
+        ]
+    },
+    "/validation/rama_sidechain_listing/entry/1cbs": {
+        "1cbs": {
+            "1": {
+                "A": {
+                    "1": [
+                        {
+                            "rota": "Cg_endo",
+                            "seq": "1"
+                        },
+                        {
+                            "rota": "t30",
+                            "phi": -124.5,
+                            "psi": 100.5,
+                            "rama": "Favored",
+                            "seq": "2"
+                        },
+                        {
+                            "rota": "m-85",
+                            "phi": -80.0,
+                            "psi": -9.9,
+                            "rama": "Favored",
+                            "seq": "3"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -55.6,
+                            "psi": 140.2,
+                            "rama": "Favored",
+                            "seq": "4"
+                        },
+                        {
+                            "phi": 145.0,
+                            "psi": 177.2,
+                            "rama": "Favored",
+                            "seq": "5"
+                        },
+                        {
+                            "rota": "m-80",
+                            "phi": -104.9,
+                            "psi": 115.8,
+                            "rama": "Favored",
+                            "seq": "6"
+                        },
+                        {
+                            "rota": "m95",
+                            "phi": -107.0,
+                            "psi": 141.0,
+                            "rama": "Favored",
+                            "seq": "7"
+                        },
+                        {
+                            "rota": "ptmm?",
+                            "phi": -119.5,
+                            "psi": 141.9,
+                            "rama": "Favored",
+                            "seq": "8"
+                        },
+                        {
+                            "rota": "tt",
+                            "phi": -78.1,
+                            "psi": 144.9,
+                            "rama": "Favored",
+                            "seq": "9"
+                        },
+                        {
+                            "rota": "pt",
+                            "phi": -126.0,
+                            "psi": -12.2,
+                            "rama": "Favored",
+                            "seq": "10"
+                        },
+                        {
+                            "rota": "ttm-85",
+                            "phi": -159.0,
+                            "psi": 138.7,
+                            "rama": "Favored",
+                            "seq": "11"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -140.7,
+                            "psi": 127.1,
+                            "rama": "Favored",
+                            "seq": "12"
+                        },
+                        {
+                            "rota": "mm-40",
+                            "phi": -128.8,
+                            "psi": 138.0,
+                            "rama": "Favored",
+                            "seq": "13"
+                        },
+                        {
+                            "rota": "OUTLIER",
+                            "phi": 65.5,
+                            "psi": 22.9,
+                            "rama": "Favored",
+                            "seq": "14"
+                        },
+                        {
+                            "rota": "t80",
+                            "phi": -66.9,
+                            "psi": -48.6,
+                            "rama": "Favored",
+                            "seq": "15"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -61.6,
+                            "psi": -39.6,
+                            "rama": "Favored",
+                            "seq": "16"
+                        },
+                        {
+                            "rota": "mp0",
+                            "phi": -60.9,
+                            "psi": -36.1,
+                            "rama": "Favored",
+                            "seq": "17"
+                        },
+                        {
+                            "rota": "tp",
+                            "phi": -65.5,
+                            "psi": -43.2,
+                            "rama": "Favored",
+                            "seq": "18"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -65.4,
+                            "psi": -32.2,
+                            "rama": "Favored",
+                            "seq": "19"
+                        },
+                        {
+                            "rota": "ttmm",
+                            "phi": -65.1,
+                            "psi": -45.5,
+                            "rama": "Favored",
+                            "seq": "20"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -62.3,
+                            "psi": -36.0,
+                            "rama": "Favored",
+                            "seq": "21"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -75.2,
+                            "psi": -4.5,
+                            "rama": "Favored",
+                            "seq": "22"
+                        },
+                        {
+                            "phi": 84.0,
+                            "psi": 20.3,
+                            "rama": "Favored",
+                            "seq": "23"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -79.6,
+                            "psi": 130.1,
+                            "rama": "Favored",
+                            "seq": "24"
+                        },
+                        {
+                            "rota": "p30",
+                            "phi": -67.0,
+                            "psi": 161.3,
+                            "rama": "Favored",
+                            "seq": "25"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -47.1,
+                            "psi": -52.0,
+                            "rama": "Favored",
+                            "seq": "26"
+                        },
+                        {
+                            "rota": "OUTLIER",
+                            "phi": -67.6,
+                            "psi": -38.7,
+                            "rama": "Favored",
+                            "seq": "27"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -68.8,
+                            "psi": -34.0,
+                            "rama": "Favored",
+                            "seq": "28"
+                        },
+                        {
+                            "rota": "mtm105",
+                            "phi": -63.4,
+                            "psi": -44.2,
+                            "rama": "Favored",
+                            "seq": "29"
+                        },
+                        {
+                            "rota": "tttt",
+                            "phi": -54.8,
+                            "psi": -47.3,
+                            "rama": "Favored",
+                            "seq": "30"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -62.9,
+                            "psi": -48.6,
+                            "rama": "Favored",
+                            "seq": "31"
+                        },
+                        {
+                            "phi": -61.0,
+                            "psi": -48.3,
+                            "rama": "Favored",
+                            "seq": "32"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -59.1,
+                            "psi": -41.5,
+                            "rama": "Favored",
+                            "seq": "33"
+                        },
+                        {
+                            "phi": -65.9,
+                            "psi": -45.8,
+                            "rama": "Favored",
+                            "seq": "34"
+                        },
+                        {
+                            "phi": -68.1,
+                            "psi": -36.2,
+                            "rama": "Favored",
+                            "seq": "35"
+                        },
+                        {
+                            "phi": -73.9,
+                            "psi": -8.7,
+                            "rama": "Favored",
+                            "seq": "36"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -76.7,
+                            "psi": -14.7,
+                            "rama": "Favored",
+                            "seq": "37"
+                        },
+                        {
+                            "rota": "pttp",
+                            "phi": -135.8,
+                            "psi": 65.0,
+                            "rama": "Favored",
+                            "seq": "38"
+                        },
+                        {
+                            "rota": "Cg_endo",
+                            "phi": -84.3,
+                            "psi": 157.8,
+                            "rama": "Favored",
+                            "seq": "39"
+                        },
+                        {
+                            "phi": -111.4,
+                            "psi": 121.5,
+                            "rama": "Favored",
+                            "seq": "40"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -119.1,
+                            "psi": 128.1,
+                            "rama": "Favored",
+                            "seq": "41"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -124.8,
+                            "psi": 124.3,
+                            "rama": "Favored",
+                            "seq": "42"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -121.0,
+                            "psi": 134.3,
+                            "rama": "Favored",
+                            "seq": "43"
+                        },
+                        {
+                            "rota": "mttt",
+                            "phi": -126.7,
+                            "psi": 121.8,
+                            "rama": "Favored",
+                            "seq": "44"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -122.2,
+                            "psi": 135.7,
+                            "rama": "Favored",
+                            "seq": "45"
+                        },
+                        {
+                            "rota": "mm-40",
+                            "phi": -134.0,
+                            "psi": 90.9,
+                            "rama": "Favored",
+                            "seq": "46"
+                        },
+                        {
+                            "phi": 71.2,
+                            "psi": -119.2,
+                            "rama": "Favored",
+                            "seq": "47"
+                        },
+                        {
+                            "rota": "m-20",
+                            "phi": -101.2,
+                            "psi": 12.8,
+                            "rama": "Favored",
+                            "seq": "48"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -104.0,
+                            "psi": 129.6,
+                            "rama": "Favored",
+                            "seq": "49"
+                        },
+                        {
+                            "rota": "m-85",
+                            "phi": -127.8,
+                            "psi": 149.5,
+                            "rama": "Favored",
+                            "seq": "50"
+                        },
+                        {
+                            "rota": "t80",
+                            "phi": -132.3,
+                            "psi": 124.9,
+                            "rama": "Favored",
+                            "seq": "51"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -131.1,
+                            "psi": 119.3,
+                            "rama": "Favored",
+                            "seq": "52"
+                        },
+                        {
+                            "rota": "tttt",
+                            "phi": -115.2,
+                            "psi": 121.8,
+                            "rama": "Favored",
+                            "seq": "53"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -118.9,
+                            "psi": 119.0,
+                            "rama": "Favored",
+                            "seq": "54"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -120.5,
+                            "psi": 137.5,
+                            "rama": "Favored",
+                            "seq": "55"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -140.6,
+                            "psi": 168.5,
+                            "rama": "Favored",
+                            "seq": "56"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -62.8,
+                            "psi": -20.9,
+                            "rama": "Favored",
+                            "seq": "57"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -112.4,
+                            "psi": -10.4,
+                            "rama": "Favored",
+                            "seq": "58"
+                        },
+                        {
+                            "rota": "ttt85",
+                            "phi": -169.0,
+                            "psi": 135.3,
+                            "rama": "Allowed",
+                            "seq": "59"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -129.9,
+                            "psi": 134.8,
+                            "rama": "Favored",
+                            "seq": "60"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -124.3,
+                            "psi": 144.3,
+                            "rama": "Favored",
+                            "seq": "61"
+                        },
+                        {
+                            "rota": "mt-10",
+                            "phi": -133.9,
+                            "psi": 117.2,
+                            "rama": "Favored",
+                            "seq": "62"
+                        },
+                        {
+                            "rota": "pt",
+                            "phi": -118.8,
+                            "psi": 147.4,
+                            "rama": "Favored",
+                            "seq": "63"
+                        },
+                        {
+                            "rota": "m-80",
+                            "phi": -130.4,
+                            "psi": 122.4,
+                            "rama": "Favored",
+                            "seq": "64"
+                        },
+                        {
+                            "rota": "p90",
+                            "phi": -149.7,
+                            "psi": 160.9,
+                            "rama": "Favored",
+                            "seq": "65"
+                        },
+                        {
+                            "rota": "tttp",
+                            "phi": -117.8,
+                            "psi": 132.7,
+                            "rama": "Favored",
+                            "seq": "66"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -59.2,
+                            "psi": 130.2,
+                            "rama": "Favored",
+                            "seq": "67"
+                        },
+                        {
+                            "phi": 91.4,
+                            "psi": -2.6,
+                            "rama": "Favored",
+                            "seq": "68"
+                        },
+                        {
+                            "rota": "mt-10",
+                            "phi": -119.7,
+                            "psi": 127.6,
+                            "rama": "Favored",
+                            "seq": "69"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -62.3,
+                            "psi": 140.7,
+                            "rama": "Favored",
+                            "seq": "70"
+                        },
+                        {
+                            "rota": "p90",
+                            "phi": -143.5,
+                            "psi": 174.1,
+                            "rama": "Favored",
+                            "seq": "71"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -119.4,
+                            "psi": 132.7,
+                            "rama": "Favored",
+                            "seq": "72"
+                        },
+                        {
+                            "rota": "pt-20",
+                            "phi": -144.9,
+                            "psi": -154.3,
+                            "rama": "Allowed",
+                            "seq": "73"
+                        },
+                        {
+                            "rota": "mt-30",
+                            "phi": -135.1,
+                            "psi": 153.8,
+                            "rama": "Favored",
+                            "seq": "74"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -71.7,
+                            "psi": 171.4,
+                            "rama": "Favored",
+                            "seq": "75"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -56.9,
+                            "psi": -37.1,
+                            "rama": "Favored",
+                            "seq": "76"
+                        },
+                        {
+                            "rota": "p-10",
+                            "phi": -83.5,
+                            "psi": 6.0,
+                            "rama": "Favored",
+                            "seq": "77"
+                        },
+                        {
+                            "phi": 93.1,
+                            "psi": 16.9,
+                            "rama": "Favored",
+                            "seq": "78"
+                        },
+                        {
+                            "rota": "mtm180",
+                            "phi": -96.9,
+                            "psi": 133.7,
+                            "rama": "Favored",
+                            "seq": "79"
+                        },
+                        {
+                            "rota": "Cg_exo",
+                            "phi": -58.4,
+                            "psi": 138.3,
+                            "rama": "Favored",
+                            "seq": "80"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -150.0,
+                            "psi": 160.5,
+                            "rama": "Favored",
+                            "seq": "81"
+                        },
+                        {
+                            "rota": "mmtt",
+                            "phi": -100.8,
+                            "psi": 129.3,
+                            "rama": "Favored",
+                            "seq": "82"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -121.5,
+                            "psi": 152.9,
+                            "rama": "Favored",
+                            "seq": "83"
+                        },
+                        {
+                            "rota": "tp",
+                            "phi": -142.2,
+                            "psi": 117.6,
+                            "rama": "Favored",
+                            "seq": "84"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -100.5,
+                            "psi": 138.7,
+                            "rama": "Favored",
+                            "seq": "85"
+                        },
+                        {
+                            "rota": "mttt",
+                            "phi": -136.9,
+                            "psi": 158.9,
+                            "rama": "Favored",
+                            "seq": "86"
+                        },
+                        {
+                            "rota": "m95",
+                            "phi": -84.3,
+                            "psi": 111.9,
+                            "rama": "Favored",
+                            "seq": "87"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -73.2,
+                            "psi": -40.5,
+                            "rama": "Favored",
+                            "seq": "88"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -147.6,
+                            "psi": 178.8,
+                            "rama": "Favored",
+                            "seq": "89"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -53.9,
+                            "psi": -37.5,
+                            "rama": "Favored",
+                            "seq": "90"
+                        },
+                        {
+                            "rota": "m-80",
+                            "phi": -112.6,
+                            "psi": 15.7,
+                            "rama": "Favored",
+                            "seq": "91"
+                        },
+                        {
+                            "rota": "tttt",
+                            "phi": -137.7,
+                            "psi": 122.3,
+                            "rama": "Favored",
+                            "seq": "92"
+                        },
+                        {
+                            "rota": "ptp",
+                            "phi": -106.2,
+                            "psi": 143.0,
+                            "rama": "Favored",
+                            "seq": "93"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -125.6,
+                            "psi": 138.7,
+                            "rama": "Favored",
+                            "seq": "94"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -122.0,
+                            "psi": 124.5,
+                            "rama": "Favored",
+                            "seq": "95"
+                        },
+                        {
+                            "rota": "tt0",
+                            "phi": -99.8,
+                            "psi": 132.1,
+                            "rama": "Favored",
+                            "seq": "96"
+                        },
+                        {
+                            "rota": "mt-30",
+                            "phi": -114.4,
+                            "psi": 144.9,
+                            "rama": "Favored",
+                            "seq": "97"
+                        },
+                        {
+                            "rota": "tttm",
+                            "phi": -134.2,
+                            "psi": 119.6,
+                            "rama": "Favored",
+                            "seq": "98"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -60.2,
+                            "psi": 132.2,
+                            "rama": "Favored",
+                            "seq": "99"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -67.3,
+                            "psi": -37.4,
+                            "rama": "Favored",
+                            "seq": "100"
+                        },
+                        {
+                            "rota": "mtmm",
+                            "phi": -144.1,
+                            "psi": 142.6,
+                            "rama": "Favored",
+                            "seq": "101"
+                        },
+                        {
+                            "phi": 87.0,
+                            "psi": -168.2,
+                            "rama": "Favored",
+                            "seq": "102"
+                        },
+                        {
+                            "rota": "mp0",
+                            "phi": -132.0,
+                            "psi": 164.6,
+                            "rama": "Favored",
+                            "seq": "103"
+                        },
+                        {
+                            "phi": 169.2,
+                            "psi": -177.6,
+                            "rama": "Favored",
+                            "seq": "104"
+                        },
+                        {
+                            "rota": "Cg_exo",
+                            "phi": -59.3,
+                            "psi": 151.2,
+                            "rama": "Favored",
+                            "seq": "105"
+                        },
+                        {
+                            "rota": "tptp",
+                            "phi": -76.9,
+                            "psi": 125.9,
+                            "rama": "Favored",
+                            "seq": "106"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -118.8,
+                            "psi": 155.7,
+                            "rama": "Favored",
+                            "seq": "107"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -161.2,
+                            "psi": 170.5,
+                            "rama": "Favored",
+                            "seq": "108"
+                        },
+                        {
+                            "rota": "p-90",
+                            "phi": -149.0,
+                            "psi": 154.2,
+                            "rama": "Favored",
+                            "seq": "109"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -137.0,
+                            "psi": 150.2,
+                            "rama": "Favored",
+                            "seq": "110"
+                        },
+                        {
+                            "rota": "mtt85",
+                            "phi": -134.8,
+                            "psi": 130.2,
+                            "rama": "Favored",
+                            "seq": "111"
+                        },
+                        {
+                            "rota": "pt-20",
+                            "phi": -142.5,
+                            "psi": 143.9,
+                            "rama": "Favored",
+                            "seq": "112"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -95.8,
+                            "psi": 122.9,
+                            "rama": "Favored",
+                            "seq": "113"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -89.5,
+                            "psi": 168.2,
+                            "rama": "Favored",
+                            "seq": "114"
+                        },
+                        {
+                            "rota": "m120",
+                            "phi": -62.1,
+                            "psi": -23.8,
+                            "rama": "Favored",
+                            "seq": "115"
+                        },
+                        {
+                            "rota": "p30",
+                            "phi": -88.4,
+                            "psi": 4.3,
+                            "rama": "Favored",
+                            "seq": "116"
+                        },
+                        {
+                            "phi": 91.4,
+                            "psi": 6.2,
+                            "rama": "Favored",
+                            "seq": "117"
+                        },
+                        {
+                            "rota": "mt-10",
+                            "phi": -95.6,
+                            "psi": 171.5,
+                            "rama": "Favored",
+                            "seq": "118"
+                        },
+                        {
+                            "rota": "tp",
+                            "phi": -121.9,
+                            "psi": 126.8,
+                            "rama": "Favored",
+                            "seq": "119"
+                        },
+                        {
+                            "rota": "mt",
+                            "phi": -109.9,
+                            "psi": 123.8,
+                            "rama": "Favored",
+                            "seq": "120"
+                        },
+                        {
+                            "rota": "tp",
+                            "phi": -108.9,
+                            "psi": 129.8,
+                            "rama": "Favored",
+                            "seq": "121"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -121.6,
+                            "psi": 141.7,
+                            "rama": "Favored",
+                            "seq": "122"
+                        },
+                        {
+                            "rota": "mtm",
+                            "phi": -125.0,
+                            "psi": 135.5,
+                            "rama": "Favored",
+                            "seq": "123"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -124.9,
+                            "psi": 143.7,
+                            "rama": "Favored",
+                            "seq": "124"
+                        },
+                        {
+                            "phi": -140.0,
+                            "psi": 107.7,
+                            "rama": "Favored",
+                            "seq": "125"
+                        },
+                        {
+                            "rota": "m-20",
+                            "phi": 55.7,
+                            "psi": -116.0,
+                            "rama": "Allowed",
+                            "seq": "126"
+                        },
+                        {
+                            "rota": "OUTLIER",
+                            "phi": -100.3,
+                            "psi": 2.3,
+                            "rama": "Favored",
+                            "seq": "127"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -93.7,
+                            "psi": 129.4,
+                            "rama": "Favored",
+                            "seq": "128"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -118.4,
+                            "psi": 128.4,
+                            "rama": "Favored",
+                            "seq": "129"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -103.2,
+                            "psi": 129.9,
+                            "rama": "Favored",
+                            "seq": "130"
+                        },
+                        {
+                            "rota": "m",
+                            "phi": -116.6,
+                            "psi": 123.9,
+                            "rama": "Favored",
+                            "seq": "131"
+                        },
+                        {
+                            "rota": "mmm180",
+                            "phi": -128.1,
+                            "psi": 136.6,
+                            "rama": "Favored",
+                            "seq": "132"
+                        },
+                        {
+                            "rota": "t",
+                            "phi": -120.4,
+                            "psi": 137.5,
+                            "rama": "Favored",
+                            "seq": "133"
+                        },
+                        {
+                            "rota": "m-85",
+                            "phi": -131.0,
+                            "psi": 162.0,
+                            "rama": "Favored",
+                            "seq": "134"
+                        },
+                        {
+                            "rota": "p",
+                            "phi": -137.8,
+                            "psi": 151.6,
+                            "rama": "Favored",
+                            "seq": "135"
+                        },
+                        {
+                            "rota": "mtt85",
+                            "phi": -67.1,
+                            "psi": 146.1,
+                            "rama": "Favored",
+                            "seq": "136"
+                        },
+                        {
+                            "rota": "mt-10",
+                            "seq": "137"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "/pdb/entry/residue_listing/1cbs": {
+        "1cbs": {
+            "1": {
+                "A": [
+                    {
+                        "said": "A",
+                        "resnum": 1,
+                        "obs_frac": 1.0,
+                        "seq": 1,
+                        "resname": "PRO",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 2,
+                        "obs_frac": 1.0,
+                        "seq": 2,
+                        "resname": "ASN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 3,
+                        "obs_frac": 1.0,
+                        "seq": 3,
+                        "resname": "PHE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 4,
+                        "obs_frac": 1.0,
+                        "seq": 4,
+                        "resname": "SER",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 5,
+                        "obs_frac": 1.0,
+                        "seq": 5,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 6,
+                        "obs_frac": 1.0,
+                        "seq": 6,
+                        "resname": "ASN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 7,
+                        "obs_frac": 1.0,
+                        "seq": 7,
+                        "resname": "TRP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 8,
+                        "obs_frac": 1.0,
+                        "seq": 8,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 9,
+                        "obs_frac": 1.0,
+                        "seq": 9,
+                        "resname": "ILE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 10,
+                        "obs_frac": 1.0,
+                        "seq": 10,
+                        "resname": "ILE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 11,
+                        "obs_frac": 1.0,
+                        "seq": 11,
+                        "resname": "ARG",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 12,
+                        "obs_frac": 1.0,
+                        "seq": 12,
+                        "resname": "SER",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 13,
+                        "obs_frac": 1.0,
+                        "seq": 13,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 14,
+                        "obs_frac": 1.0,
+                        "seq": 14,
+                        "resname": "ASN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 15,
+                        "obs_frac": 1.0,
+                        "seq": 15,
+                        "resname": "PHE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 16,
+                        "obs_frac": 1.0,
+                        "seq": 16,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 17,
+                        "obs_frac": 1.0,
+                        "seq": 17,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 18,
+                        "obs_frac": 1.0,
+                        "seq": 18,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 19,
+                        "obs_frac": 1.0,
+                        "seq": 19,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 20,
+                        "obs_frac": 1.0,
+                        "seq": 20,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 21,
+                        "obs_frac": 1.0,
+                        "seq": 21,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 22,
+                        "obs_frac": 1.0,
+                        "seq": 22,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 23,
+                        "obs_frac": 1.0,
+                        "seq": 23,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 24,
+                        "obs_frac": 1.0,
+                        "seq": 24,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 25,
+                        "obs_frac": 1.0,
+                        "seq": 25,
+                        "resname": "ASN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 26,
+                        "obs_frac": 1.0,
+                        "seq": 26,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 27,
+                        "obs_frac": 1.0,
+                        "seq": 27,
+                        "resname": "MET",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 28,
+                        "obs_frac": 1.0,
+                        "seq": 28,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 29,
+                        "obs_frac": 1.0,
+                        "seq": 29,
+                        "resname": "ARG",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 30,
+                        "obs_frac": 1.0,
+                        "seq": 30,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 31,
+                        "obs_frac": 1.0,
+                        "seq": 31,
+                        "resname": "ILE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 32,
+                        "obs_frac": 1.0,
+                        "seq": 32,
+                        "resname": "ALA",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 33,
+                        "obs_frac": 1.0,
+                        "seq": 33,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 34,
+                        "obs_frac": 1.0,
+                        "seq": 34,
+                        "resname": "ALA",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 35,
+                        "obs_frac": 1.0,
+                        "seq": 35,
+                        "resname": "ALA",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 36,
+                        "obs_frac": 1.0,
+                        "seq": 36,
+                        "resname": "ALA",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 37,
+                        "obs_frac": 1.0,
+                        "seq": 37,
+                        "resname": "SER",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 38,
+                        "obs_frac": 1.0,
+                        "seq": 38,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 39,
+                        "obs_frac": 1.0,
+                        "seq": 39,
+                        "resname": "PRO",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 40,
+                        "obs_frac": 1.0,
+                        "seq": 40,
+                        "resname": "ALA",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 41,
+                        "obs_frac": 1.0,
+                        "seq": 41,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 42,
+                        "obs_frac": 1.0,
+                        "seq": 42,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 43,
+                        "obs_frac": 1.0,
+                        "seq": 43,
+                        "resname": "ILE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 44,
+                        "obs_frac": 1.0,
+                        "seq": 44,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 45,
+                        "obs_frac": 1.0,
+                        "seq": 45,
+                        "resname": "GLN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 46,
+                        "obs_frac": 1.0,
+                        "seq": 46,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 47,
+                        "obs_frac": 1.0,
+                        "seq": 47,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 48,
+                        "obs_frac": 1.0,
+                        "seq": 48,
+                        "resname": "ASP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 49,
+                        "obs_frac": 1.0,
+                        "seq": 49,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 50,
+                        "obs_frac": 1.0,
+                        "seq": 50,
+                        "resname": "PHE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 51,
+                        "obs_frac": 1.0,
+                        "seq": 51,
+                        "resname": "TYR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 52,
+                        "obs_frac": 1.0,
+                        "seq": 52,
+                        "resname": "ILE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 53,
+                        "obs_frac": 1.0,
+                        "seq": 53,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 54,
+                        "obs_frac": 1.0,
+                        "seq": 54,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 55,
+                        "obs_frac": 1.0,
+                        "seq": 55,
+                        "resname": "SER",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 56,
+                        "obs_frac": 1.0,
+                        "seq": 56,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 57,
+                        "obs_frac": 1.0,
+                        "seq": 57,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 58,
+                        "obs_frac": 1.0,
+                        "seq": 58,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 59,
+                        "obs_frac": 1.0,
+                        "seq": 59,
+                        "resname": "ARG",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 60,
+                        "obs_frac": 1.0,
+                        "seq": 60,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 61,
+                        "obs_frac": 1.0,
+                        "seq": 61,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 62,
+                        "obs_frac": 1.0,
+                        "seq": 62,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 63,
+                        "obs_frac": 1.0,
+                        "seq": 63,
+                        "resname": "ILE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 64,
+                        "obs_frac": 1.0,
+                        "seq": 64,
+                        "resname": "ASN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 65,
+                        "obs_frac": 1.0,
+                        "seq": 65,
+                        "resname": "PHE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 66,
+                        "obs_frac": 1.0,
+                        "seq": 66,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 67,
+                        "obs_frac": 1.0,
+                        "seq": 67,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 68,
+                        "obs_frac": 1.0,
+                        "seq": 68,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 69,
+                        "obs_frac": 1.0,
+                        "seq": 69,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 70,
+                        "obs_frac": 1.0,
+                        "seq": 70,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 71,
+                        "obs_frac": 1.0,
+                        "seq": 71,
+                        "resname": "PHE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 72,
+                        "obs_frac": 1.0,
+                        "seq": 72,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 73,
+                        "obs_frac": 1.0,
+                        "seq": 73,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 74,
+                        "obs_frac": 1.0,
+                        "seq": 74,
+                        "resname": "GLN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 75,
+                        "obs_frac": 1.0,
+                        "seq": 75,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 76,
+                        "obs_frac": 1.0,
+                        "seq": 76,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 77,
+                        "obs_frac": 1.0,
+                        "seq": 77,
+                        "resname": "ASP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 78,
+                        "obs_frac": 1.0,
+                        "seq": 78,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 79,
+                        "obs_frac": 1.0,
+                        "seq": 79,
+                        "resname": "ARG",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 80,
+                        "obs_frac": 1.0,
+                        "seq": 80,
+                        "resname": "PRO",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 81,
+                        "obs_frac": 1.0,
+                        "seq": 81,
+                        "resname": "CYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 82,
+                        "obs_frac": 1.0,
+                        "seq": 82,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 83,
+                        "obs_frac": 1.0,
+                        "seq": 83,
+                        "resname": "SER",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 84,
+                        "obs_frac": 1.0,
+                        "seq": 84,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 85,
+                        "obs_frac": 1.0,
+                        "seq": 85,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 86,
+                        "obs_frac": 1.0,
+                        "seq": 86,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 87,
+                        "obs_frac": 1.0,
+                        "seq": 87,
+                        "resname": "TRP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 88,
+                        "obs_frac": 1.0,
+                        "seq": 88,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 89,
+                        "obs_frac": 1.0,
+                        "seq": 89,
+                        "resname": "SER",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 90,
+                        "obs_frac": 1.0,
+                        "seq": 90,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 91,
+                        "obs_frac": 1.0,
+                        "seq": 91,
+                        "resname": "ASN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 92,
+                        "obs_frac": 1.0,
+                        "seq": 92,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 93,
+                        "obs_frac": 1.0,
+                        "seq": 93,
+                        "resname": "MET",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 94,
+                        "obs_frac": 1.0,
+                        "seq": 94,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 95,
+                        "obs_frac": 1.0,
+                        "seq": 95,
+                        "resname": "CYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 96,
+                        "obs_frac": 1.0,
+                        "seq": 96,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 97,
+                        "obs_frac": 1.0,
+                        "seq": 97,
+                        "resname": "GLN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 98,
+                        "obs_frac": 1.0,
+                        "seq": 98,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 99,
+                        "obs_frac": 1.0,
+                        "seq": 99,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 100,
+                        "obs_frac": 1.0,
+                        "seq": 100,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 101,
+                        "obs_frac": 1.0,
+                        "seq": 101,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 102,
+                        "obs_frac": 1.0,
+                        "seq": 102,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 103,
+                        "obs_frac": 1.0,
+                        "seq": 103,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 104,
+                        "obs_frac": 1.0,
+                        "seq": 104,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 105,
+                        "obs_frac": 1.0,
+                        "seq": 105,
+                        "resname": "PRO",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 106,
+                        "obs_frac": 1.0,
+                        "seq": 106,
+                        "resname": "LYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 107,
+                        "obs_frac": 1.0,
+                        "seq": 107,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 108,
+                        "obs_frac": 1.0,
+                        "seq": 108,
+                        "resname": "SER",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 109,
+                        "obs_frac": 1.0,
+                        "seq": 109,
+                        "resname": "TRP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 110,
+                        "obs_frac": 1.0,
+                        "seq": 110,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 111,
+                        "obs_frac": 1.0,
+                        "seq": 111,
+                        "resname": "ARG",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 112,
+                        "obs_frac": 1.0,
+                        "seq": 112,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 113,
+                        "obs_frac": 1.0,
+                        "seq": 113,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 114,
+                        "obs_frac": 1.0,
+                        "seq": 114,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 115,
+                        "obs_frac": 1.0,
+                        "seq": 115,
+                        "resname": "ASN",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 116,
+                        "obs_frac": 1.0,
+                        "seq": 116,
+                        "resname": "ASP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 117,
+                        "obs_frac": 1.0,
+                        "seq": 117,
+                        "resname": "GLY",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 118,
+                        "obs_frac": 1.0,
+                        "seq": 118,
+                        "resname": "GLU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 119,
+                        "obs_frac": 1.0,
+                        "seq": 119,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 120,
+                        "obs_frac": 1.0,
+                        "seq": 120,
+                        "resname": "ILE",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 121,
+                        "obs_frac": 1.0,
+                        "seq": 121,
+                        "resname": "LEU",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 122,
+                        "obs_frac": 1.0,
+                        "seq": 122,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 123,
+                        "obs_frac": 1.0,
+                        "seq": 123,
+                        "resname": "MET",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 124,
+                        "obs_frac": 1.0,
+                        "seq": 124,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 125,
+                        "obs_frac": 1.0,
+                        "seq": 125,
+                        "resname": "ALA",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 126,
+                        "obs_frac": 1.0,
+                        "seq": 126,
+                        "resname": "ASP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 127,
+                        "obs_frac": 1.0,
+                        "seq": 127,
+                        "resname": "ASP",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 128,
+                        "obs_frac": 1.0,
+                        "seq": 128,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 129,
+                        "obs_frac": 1.0,
+                        "seq": 129,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 130,
+                        "obs_frac": 1.0,
+                        "seq": 130,
+                        "resname": "CYS",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 131,
+                        "obs_frac": 1.0,
+                        "seq": 131,
+                        "resname": "THR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 132,
+                        "obs_frac": 1.0,
+                        "seq": 132,
+                        "resname": "ARG",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 133,
+                        "obs_frac": 1.0,
+                        "seq": 133,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 134,
+                        "obs_frac": 1.0,
+                        "seq": 134,
+                        "resname": "TYR",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 135,
+                        "obs_frac": 1.0,
+                        "seq": 135,
+                        "resname": "VAL",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 136,
+                        "obs_frac": 1.0,
+                        "seq": 136,
+                        "resname": "ARG",
+                        "inscode": " "
+                    },
+                    {
+                        "said": "A",
+                        "resnum": 137,
+                        "obs_frac": 1.0,
+                        "seq": 137,
+                        "resname": "GLU",
+                        "inscode": " "
+                    }
+                ]
+            },
+            "2": {
+                "A": [
+                    {
+                        "said": "B",
+                        "resnum": 200,
+                        "obs_frac": 1.0,
+                        "seq": 1,
+                        "resname": "REA",
+                        "inscode": " "
+                    }
+                ]
+            }
+        }
+    }
+};
+// }}}
+		var apiurl = 'http://ves-hx-88.ebi.ac.uk/api';
+		var apiurl = 'http://puck.ebi.ac.uk:10000';
+		document.getElementById("api_info").innerHTML = apiurl;
+		new Biojs.PDBramaViewer( {divid:"ramadiv", pdbid:pid, size:400, apiURL:apiurl});
+		new Biojs.PDBentryTree(  {divid:"treediv", pdbid:pid, size:400, apiURL:apiurl});
+		new Biojs.PDBxrayValidTables( {divid:"mol3div", pdbid:pid, size:400, apiURL:apiurl} );
+		//var mol3v = new Biojs.PDB3dviewerOAV({divid:"mol3div", pdbid:pid, size:400, apiURL:apiurl}); mol3v.loadPDBentry('1cbs');
+		//mol3v.loadEDSmap('1cbs'); //mol3v.loadEDSmap('1cbs', 1); // lets delegate this to maps plugin
+		new Biojs.PDBvalidationPercentileChart({divid:"percentilediv", pdbid:pid, height:200, width:400, apiURL:apiurl});
+		new Biojs.PDBvalidSeqviewer({divid:"seqdiv", pdbid:pid, height:400, width:400, apiURL:apiurl});
+	};
+	function setupKeyresponse() {
+		jQuery(document.getElementById('pdbid')).keypress( function(e) {
+			if(e.keyCode==13) showWidgets();
+		} );
+	};
+    </script>
+</head>
+<body onload="setupKeyresponse(); showWidgets();">
+	!!!UNDER DEVELOPMENT!!!<br>
+	Using API <div id="api_info"></div><hr>
+	These are PDBe widgets for showing Rama plot etc.<br>
+	It depends on a PDBe API server for its data.<hr>
+		<table border=0>
+			<tr><td>PDB Code</td><td><input type=text name="pdbid" id="pdbid" value="1cbs"></input></td></tr>
+		</table>
+    <div id="parentdiv"></div>
+</body>
+</html>

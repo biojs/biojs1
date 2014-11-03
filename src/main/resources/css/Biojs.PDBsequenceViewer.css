@@ -1,0 +1,41 @@
+.qtip-content {
+	font-size:12px;
+}
+
+.track_right {
+	/*border-left: 1px solid black;*/
+}
+
+.track_left {
+	/*font-family: Consolas, monaco, monospace;*/
+	font-family: "Lucida Sans Typewriter", "Lucida Console", Monaco, "Bitstream Vera Sans Mono", monospace;
+	/*border-right: 1px solid black*/;
+	text-align: right;
+	padding-right: 5px;
+}
+
+.rangeslider_tick_1 {
+	color: yellow;
+}
+.rangeslider_tick_10 {
+	color: red;
+}
+.rangeslider_tick_100 {
+	color: green;
+}
+.rangeslider_tick_1000 {
+	color: blue;
+}
+.rangeslider_tick_10000 {
+	color: purple;
+}
+
+.ui-rangeSlider-bar {
+	/*background:#FFFFFF;
+	height:20px;*/
+}
+
+
+.pdbseqview_leftlabelcol { float:left; }
+.pdbseqview_trackcol { float:left; }
+.pdbseqview_rightlabelcol { float:left; }
