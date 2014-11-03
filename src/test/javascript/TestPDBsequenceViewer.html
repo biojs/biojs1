@@ -1,45 +1,50 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <title>PDBsequenceViewer - Test</title>
-    <!--JQuery LIb and CSS -->
-    <script src="../../main/resources/dependencies/jquery/jquery-1.7.2.min.js" type="text/javascript"></script>
-    <script src="../../main/resources/dependencies/jquery/q.js" type="text/javascript"></script>
-    <script src="../../main/resources/dependencies/jquery/swanand.jquery.tooltip.js" type="text/javascript"></script>
-    <link rel="stylesheet" href="../../main/resources/dependencies/jquery/jquery.tooltip.css"></link>
-    <script type="text/javascript">
-        jQuery.noConflict();
-    </script>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	<title>PDBsequenceViewer - Test</title>
+	<!--JQuery LIb and CSS -->
+	<!-- <script src="http://www.ebi.ac.uk/~swanand/web/dev/BiojsFiles/jqui/jquery-ui-1.10.3.custom/js/jquery-1.9.1.js" type="text/javascript"></script> -->
+	<!-- <script src="http://www.ebi.ac.uk/~swanand/web/dev/BiojsFiles/jqui/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.js" type="text/javascript"></script> -->
+ 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="../../main/resources/dependencies/jquery/jquery-ui-1.10.3.custom/development-bundle/themes/base/jquery.ui.all.css"></link>
+	<script type="text/javascript" src="../../main/resources/dependencies/jquery/qtip2/jquery.qtip.js"></script>
+	<link rel="stylesheet" href="../../main/resources/dependencies/jquery/qtip2/jquery.qtip.css">
+	<link rel="stylesheet" href="../../main/resources/css/Biojs.PDBsequenceViewer.css">
+
+	<style>
+	.pdbseqview_leftlabelcol { float:left; }
+	.pdbseqview_trackcol { float:left; }
+	.pdbseqview_rightlabelcol { float:left; }
+	</style>
 
 
+	<script type="text/javascript">
+		jQuery.noConflict();
+	</script>
 
-	<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js"></script> -->
-	<script src="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/lib/jquery-ui-1.8.16.custom.min.js"></script>
+	<script src="../../main/resources/dependencies/jquery/q.js" type="text/javascript"></script> <!-- leave alone -->
+
+    <!-- range slider -->
 	<script src="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/jQAllRangeSliders-withRuler-min.js"></script>
+	<link rel="stylesheet" id="themeCSS" href="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/../css/classic.css">
+	<link rel="stylesheet"               href="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/lib/jquery-ui/css/smoothness/jquery-ui-1.8.10.custom.css">
 
-	<link rel="stylesheet" id="themeCSS" href="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/../css/classic.css"> 
-	<link rel="stylesheet" href="../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/lib/jquery-ui/css/smoothness/jquery-ui-1.8.10.custom.css">  
+	<!--END JQuery LIb and CSS -->
 
+	<!-- raphael LIB -->
+	<script src="../../main/resources/dependencies/graphics/raphael-2.1.0.js" type="text/javascript" charset="utf-8"></script>
 
-    <!--END JQuery LIb and CSS -->
+	<!-- BIOJS LIB and CSS -->
+	<script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBJqueryTopics.js"></script>
+    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBcolourFactory.js"></script>
+	<script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBdatabroker.js"></script>
+	<script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBsequenceViewer.js"></script>
+	<script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBsequenceLayout.js"></script>
 
-<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.9.0/build/slider/assets/skins/sam/slider.css" />
-<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/yahoo-dom-event/yahoo-dom-event.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/animation/animation-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/dragdrop/dragdrop-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.9.0/build/slider/slider.js"></script>
-
-    <!-- raphael LIB -->
-    <script src="../../main/resources/dependencies/graphics/raphael-2.1.0.js" type="text/javascript" charset="utf-8"></script>
-
-    <!-- BIOJS LIB and CSS -->
-    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.js"></script>
-    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBsequenceViewer.js"></script>
-    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBdatabroker.js"></script>
-    <script language="JavaScript" type="text/javascript" src="../../main/javascript/Biojs.PDBsequenceLayout.js"></script>
-
-    <script>
+	<script>
 		function seqdemo() {
 
 			var someseq = '', abcd = "ACDEFGHIKLMNPQRSTVWY";
@@ -103,7 +108,7 @@
 					}
 				]}
 			];
-			new Biojs.PDBsequenceViewer({divid:"seqdiv3", numrows:1, leftwidth:50, width:1000, rightwidth:50, tracks:thetracks3});
+			new Biojs.PDBsequenceViewer({divid:"seqdiv3", numrows:1, leftwidth:5, width:1000, rightwidth:5, tracks:thetracks3});
 
 
 
@@ -112,21 +117,47 @@
 			var thetracks2 = [
 				{height:25, painters:[
 					{type:'Biojs.ZoombarPainter', seqlen:200, numIndicesInRow:200,
-						pixelwidth:600, initleft:0, initright:200, thumbwidth:20
+						pixelwidth:600, initleft:0, initright:200-1, thumbwidth:20
 					}
 				]},
-				{height:20, painters:[
+				{height:25, leftlabel: "label", rightlabel:"tag", painters:[
+					{ type:'Biojs.DomainPainter', seqlen:200, numIndicesInRow:200,
+						domains:[
+							{
+								ranges:[[70,85]], ypos:{'helix':1}, attribs:{fill:'purple',stroke:'none'},
+								tooltip:{common:'yes',text:'this is a super-special helix'}, glowOnHover:{fill:'silver'}
+							},
+						]
+					},
+					{ type:'Biojs.DomainPainter', seqlen:200, numIndicesInRow:200,
+						domains:[
+							{
+								ranges:[[112,134]], ypos:{'helix':1}, attribs:{fill:'purple',stroke:'none'},
+								tooltip:{common:'yes',text:'this is an ordinary helix'}, glowOnHover:{fill:'silver'}
+							},
+						]
+					},
+					{ type:'Biojs.DomainPainter', seqlen:200, numIndicesInRow:200,
+						domains:[
+							{
+								ranges:[[0,10],[20,30]], ypos:{'strand':1}, attribs:{fill:'cyan',stroke:'none'},
+								tooltip:{common:'yes',text:'this is a special beta sheet'}, glowOnHover:{fill:'silver'}
+							},
+						]
+					}
+				]},
+				{height:20, leftlabel:"seq", rightlabel:"row", painters:[
 					{type:'Biojs.DomainPainter', seqlen:200, numIndicesInRow:200,
 						domains:[
-							{ranges:[[0,199]], ypos:{midpercent:80}, attribs:{fill:'none',stroke:'none'},   // uniprot seq
+							{ranges:[[0,200-1]], ypos:{midpercent:80}, attribs:{fill:'none',stroke:'none'},   // uniprot seq
 								tooltip:{common:'yes','text':'Sequence'}, sequence:someseq }
 						]
 					}
 				]},
-				{height:20, painters:[
+				{height:20, leftlabel:"L", rightlabel:"R", painters:[
 					{type:'Biojs.DomainPainter', seqlen:200, numIndicesInRow:200,
 						domains:[
-							{ranges:[[0,199]], ypos:{midpercent:20}, attribs:{fill:'#33AA33',stroke:'#33AA33'},   // uniprot seq
+							{ranges:[[0,200-1]], ypos:{midpercent:20}, attribs:{fill:'#33AA33',stroke:'#33AA33'},   // uniprot seq
 								tooltip:{common:'yes','text':'Uniprot P34243'} },
 							{ranges:[[10,90]], ypos:{midpercent:50}, attribs:{fill:'#EE3333',stroke:'none'},  // pfam domain
 								tooltip:{common:'yes',text:'Pfam domain PF12345'}, glowOnHover:{fill:'silver'} },
@@ -178,59 +209,90 @@
 					}
 				]}
 			];
-			new Biojs.PDBsequenceViewer({divid:"seqdiv", numrows:1, leftwidth:50, width:150, rightwidth:50, tracks:thetracks});
+			new Biojs.PDBsequenceViewer({divid:"seqdiv", numrows:1, leftwidth:0, width:150, rightwidth:0, tracks:thetracks});
 
 			var thetracks1 = [
-				{height:20, painters:[
+				{height:20, "leftlabel":"label", painters:[
 					{type:'Biojs.ObservedSequencePainter', seqlen:200, numIndicesInRow:200, unobserved:[[50,70],[95,99]], multimodelled:[[33,33],[44,48]],
 						midribAttrib:{fill:'lightgreen',stroke:null}, obsbarAttrib:{fill:'green',stroke:null},
 						tooltip:"hello again", clickURL:"http://www.google.com"
 					}
 				]}
 			];
-			new Biojs.PDBsequenceViewer({divid:"seqdiv1", numrows:1, leftwidth:50, width:100, rightwidth:50, tracks:thetracks1});
-
-			new Biojs.PDBsequenceLayout({pdbid:'1cbs', apiURL:'http://puck.ebi.ac.uk:10000', divid:'seqdiv4', width:800});
-			jQuery('#pdbid').keypress( function(e) {
+			new Biojs.PDBsequenceViewer({divid:"seqdiv1", numrows:1, leftwidth:50, width:100, rightwidth:0, tracks:thetracks1});
+			var apiurl = "http://puck.ebi.ac.uk:10000";
+			var apiurl = 'http://ves-hx-88.ebi.ac.uk/api';
+			document.getElementById("api_info").innerHTML = apiurl;
+			new Biojs.PDBsequenceLayout({pdbid:'1cbs', entity:'1', apiURL:apiurl, divid:'seqdiv4', width:800});
+			jQuery('#pdbid,#entityid').keypress( function(e) { // to make keyboard-'enter' change contents of seqdiv4
 				newpid = document.getElementById("pdbid").value;
 				//if(newpid.length==4) {
 				if(e.keyCode==13) {
 					document.getElementById("seqdiv4").innerHTML = "";
 					console.log(document.getElementById("pdbid").value);
-					new Biojs.PDBsequenceLayout({pdbid:document.getElementById("pdbid").value, apiURL:'http://puck.ebi.ac.uk:10000', divid:'seqdiv4', width:800});
+					new Biojs.PDBsequenceLayout({pdbid:document.getElementById("pdbid").value, entity:document.getElementById("entityid").value, apiURL:apiurl, divid:'seqdiv4', width:800});
+				}
+			} );
+
+			new Biojs.PDBsequenceLayout({pdbid:'1kx8', entity:'1', apiURL:apiurl, divid:'seqdiv5', width:200, mini:'yes',height:50, clickURL:'http://pdbe.org/1cbs'});
+			new Biojs.PDBsequenceLayout({pdbid:'2x9t', entity:['2','3'], apiURL:apiurl, divid:['seqdiv6','seqdiv7'], width:[200,400], mini:'yes',height:[100,200], clickURL:['http://pdbe.org/2x9t','http://pdbe.org/1aac']});
+			jQuery('#pdbid1,#entityid1').keypress( function(e) { // to make keyboard-'enter' change contents of seqdiv4
+				newpid = document.getElementById("pdbid1").value;
+				//if(newpid.length==4) {
+				if(e.keyCode==13) {
+					document.getElementById("seqdiv5").innerHTML = "";
+					console.log("redoing", document.getElementById("pdbid1").value);
+					new Biojs.PDBsequenceLayout({pdbid:document.getElementById('pdbid1').value, entity:document.getElementById('entityid1').value, apiURL: apiurl, divid:'seqdiv5', width:200, mini:'yes', height:50});
 				}
 			} );
 
 		}
-    </script>
+	</script>
 </head>
 <body onload="seqdemo();">
 	!!!!UNDER DEVELOPMENT!!!!<hr>
+	Using API <div id="api_info"></div><hr>
 	This is a PDBe widget showing various sequence decorations.<hr>
-    example 1<br>
+	<hr>
+	example 5<br>
+	Here we get real data from PDBe API. This uses PDBdatabroker and PDBsequenceLayout components in addition to PDBsequenceViewer.<br>
+		<input type=text name="pdbid" id="pdbid" value="1cbs"></input>
+		<input type=text name="entityid" id="entityid" value="1"></input>
+	<br>
+	<div id="seqdiv4"></div>
+	<hr>
+	example 6<br>
+	Here is a mini-sequence layout for polymeric entities using real data from PDBe API. Thin line represents entity and thick line represents chain with best coverage of the entity.
+	Works for protein, DNA, RNA entities only.<br>
+	<br>
+		<input type=text name="pdbid1" id="pdbid1" value="1cbs"></input>
+		<input type=text name="entityid1" id="entityid1" value="1"></input>
+	<div id="seqdiv5"></div>
+	<div id="seqdiv6"></div>
+	<div id="seqdiv7"></div>
+	<hr>
+	<hr>
+	<hr>
+	example 1<br>
 	<div id="seqdiv"></div>
 	<hr>
 	<hr>
 	<hr>
-    example 2<br>
-    <div id="seqdiv1"></div>
+	example 2<br>
+	<div id="seqdiv1"></div>
 	<hr>
 	<hr>
 	<hr>
-    example 3<br>
-    <div style='height:100px;' id="seqdiv2"></div>
+	example 3<br>
+	<div style='height:150px;' id="seqdiv2"></div>
 	<hr>
 	<hr>
 	<hr>
-    example 4<br>
-    <div style='height:200px;' id="seqdiv3"></div>
+	example 4<br>
+	<div style='height:200px;' id="seqdiv3"></div>
 	<hr>
 	<hr>
 	<hr>
-    example 5<br>
-    Here we get real data from PDBe API. This uses PDBdatabroker and PDBsequenceLayout components in addition to PDBsequenceViewer.<br>
-		<input type=text name="pdbid" id="pdbid" value="1cbs"></input>
-	<br>
-    <div id="seqdiv4"></div>
+	<hr>
 </body>
 </html>
