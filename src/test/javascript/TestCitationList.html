@@ -1,0 +1,37 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+	<head>
+      
+      <script type="text/javascript" src="../../main/javascript/Biojs.js"></script>
+      <script type="text/javascript" src="../../main/javascript/Biojs.CitationList.js"></script>
+      <script type="text/javascript" src="../../main/resources/dependencies/jquery/jquery-1.8.2.js"></script>
+      <link href="../../main/resources/css/biojs.Citations.css" rel="stylesheet" type="text/css"/>
+ 	  
+	  <script type="text/javascript">       
+		
+		window.onload = function() {
+
+            var instance = new  Biojs.CitationList({
+ 			target: 'YourOwnDivId',
+ 			query:'p53',
+ 	    	width: 400,
+ 	    	proxyUrl: '../../main/resources/dependencies/proxy/proxy.jsp',
+ 	    	numberResults: 10,
+ 	    	displayStyle: Biojs.CitationList.FULL_STYLE,
+ 	    	elementOrder: Biojs.CitationList.TITLE_FIRST
+ 	    });	
+       
+ 
+        //triggers the citation data loading process that will use the Europe PMC RESTFUL Web service
+        instance.loadResults();
+
+     };
+		
+			
+		
+		    	   
+	   </script>	
+	</head>
+	<body>
+	  <div id="YourOwnDivId"></div>
+	</body>
+</html>
