@@ -18,7 +18,7 @@ try {
     response.setContentType(con.getContentType());
 
     BufferedReader rd = new BufferedReader(
-            new InputStreamReader(con.getInputStream()));
+            new InputStreamReader(con.getInputStream(),"UTF-8"));
     String line;
     while ((line = rd.readLine()) != null) {
         out.println(line);
