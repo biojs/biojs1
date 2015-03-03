@@ -281,6 +281,7 @@ Biojs.PDBsequencePainter = Biojs.extend({
 			else { // make raphael canvases
 				if(!arow.rapha) arow.rapha = Raphael(self.get_track_divid(arow.id,"track"), conf.dimensions.canvas_width, arow.height);
 				jQuery.each(arow.painters, function(pi,apainter) {
+					if(!apainter) return; // this should not happen but does on IE8 :-(
 					console.log("Using painter", pi, apainter.type);
 					if   (apainter.type == "sequence")
 						self.draw_sequence(arow.rapha, apainter);
@@ -690,7 +691,7 @@ Biojs.PDBsequencePainter = Biojs.extend({
 	is_zoom_row: function(arow) {
 		var is_zoom = 0;
 		for(var pi=0; pi < arow.painters.length; pi++) {
-			if(arow.painters[pi].type == "zoom") is_zoom += 1;
+			if(arow.painters[pi] && arow.painters[pi].type == "zoom") is_zoom += 1; // painter might be null on IE 8 :-(
 		}
 		if(is_zoom == 1 && arow.painters.length == 1) return true;
 		if(is_zoom > 1 || (is_zoom==1 && arow.painters.length == 1)) {

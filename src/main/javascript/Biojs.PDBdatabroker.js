@@ -122,10 +122,11 @@ var ajaxORapidataHelper = function(apiurl, apipath, workfunc, apidata, resolvefu
 		data: {varname:h.varname},
 		dataType: 'script',
 		crossDomain: true,
-		type: 'GET', timeout:30000,
+		type: 'GET', timeout:3000,
 		success: h.callback,
 		error: function(jqXHR, textStatus, errorThrown) {
-			alert("There was an error in communicating with API - please report to pdbehelp@ebi.ac.uk");
+			//alert("There was an error in communicating with API - please report to pdbehelp@ebi.ac.uk");
+			d.reject("API call failed");
 		}
 	});
 	return d.promise;
@@ -705,74 +706,215 @@ Biojs.getPDBdatabroker = function(apiurl) {
 // when an ajax call is in progress and another request comes in to make the same call, dont make the same call, and poll to check progress before calling callback
 Biojs.PDBajaxData = {};
 
-
+YUI().use('get', function(Y) {
 Biojs.PDB_API_AJAX_Helper_single = function(api_url, partial_api_urls, success_callback, error_callback) {
-	// un-issued partials
-	var my_id= partial_api_urls.join(',');
-	var deferreds = [];
-	var ajax_timeout = 20000, poll_period = 1000;
-	jQuery.each(partial_api_urls, function(pi, papi) {
-		if(!(papi in Biojs.PDBajaxData)) {
+	var varnames = {};
+	jQuery.each(partial_api_urls, function(pi,papi) {
+		var varname = 'data_from_api_'+ (""+Math.random()).replace("0.","");
+		varnames[papi] = varname;
+	});
+	var mark_absent_as_failed = function() {
+		jQuery.each(partial_api_urls, function(pi, papi) {
+			if(!(papi in Biojs.PDBajaxData))
+				Biojs.PDBajaxData[papi] = "failed";
+		});
+		return [any_in_progress, any_failed, any_absent];
+	};
+	var find_calls_status = function() {
+		var any_in_progress = [], any_failed = [], any_absent = [];
+		jQuery.each(partial_api_urls, function(pi, papi) {
+			if(!(papi in Biojs.PDBajaxData)) any_absent.push(papi);
+			else if(Biojs.PDBajaxData[papi] == "in_progress") any_in_progress.push(papi);
+			else if(Biojs.PDBajaxData[papi] == "failed") any_failed.push(papi);
+		});
+		return [any_in_progress, any_failed, any_absent];
+	};
+	var attach_successful_results = function() {
+		jQuery.each(partial_api_urls, function(pi, papi) {
+			//console.log("SEEEEE", papi, Biojs.PDBajaxData[papi]);
+			if(Biojs.PDBajaxData[papi] == "in_progress") {
+				try {
+					eval("var x = " + varnames[papi] + ";");
+				} catch(e) {
+					delete Biojs.PDBajaxData[papi];
+					return;
+				}
+				eval("var x = " + varnames[papi] + ";");
+				Biojs.PDBajaxData[papi] = x;
+				console.log("Successful call : ", papi, x);
+			}
+		});
+	};
+	var prepare_URLs = function() {
+		var urls = [];
+		jQuery.each(partial_api_urls, function(pi,papi) {
+			//console.log("check", papi, Biojs.PDBajaxData[papi], papi in Biojs.PDBajaxData);
+			if(papi in Biojs.PDBajaxData) return;
+			//console.log("prepare", papi, Biojs.PDBajaxData[papi], papi in Biojs.PDBajaxData);
+			Biojs.PDBajaxData[papi] = "in_progress";
+			urls.push(api_url + papi + "?varname=" + varnames[papi]);
+		});
+		return urls;
+	};
+	var trial_num = 0, num_trials = 3, poll_period = 2000;
+	var trial_func = function() {
+		var urls = prepare_URLs();
+		console.log("Ajax calls queued:", urls);
+		Y.Get.js(urls, function (err, tx) {
+			if(err) {
+				Y.Array.each(err, function(error) {
+					var papi = error.request.url.replace(/.varname=.*/,"").replace(api_url, "");
+					console.warn("Error loading : ", papi);
+					delete Biojs.PDBajaxData[papi];
+				});
+			}
+			attach_successful_results();
+			var call_status = find_calls_status();
+			var any_in_progress = call_status[0], any_failed = call_status[1], any_absent = call_status[2];
+			//console.log(any_in_progress, any_failed, any_absent);
+			if(any_in_progress.length > 0)
+				window.setTimeout( trial_func , poll_period );
+			else if(any_absent.length > 0) {
+				trial_num += 1;
+				if(trial_num >= num_trials)
+					error_callback();
+				else
+					trial_func();
+			}
+			else if(any_failed.length > 0)
+				error_callback();
+			else
+				success_callback();
+		});
+	};
+	trial_func();
+};
+});
+
+Biojs.PDB_API_AJAX_Helper_single_111 = function(api_url, partial_api_urls, success_callback, error_callback) {
+	var ajax_timeout = 3000, poll_period = 2000;
+	var create_deferreds = function() {
+		var deferreds = [];
+		jQuery.each(partial_api_urls, function(pi, papi) {
+			if(papi in Biojs.PDBajaxData) return;
 			console.log("AJAX_CALL_QUEUED", papi);
 			Biojs.PDBajaxData[papi] = "in_progress";
 			var varname = 'data_from_api_'+ (""+Math.random()).replace("0.","");
 			deferreds.push(
 				jQuery.ajax({
-					url: api_url + papi,
-					data: {'varname':varname},
-					dataType: 'script',
-					num_retries:3, try_index:0,
-					crossDomain: 'true',
-					type: 'GET', timeout:ajax_timeout,
+					url: api_url + papi, data: {'varname':varname},
+					dataType: 'script', crossDomain: 'true', type: 'GET',
+					//timeout:ajax_timeout,
 					success: function(data, textStatus, jqXHR) {
 						eval("var x = " + varname + ";");
+						console.log("success API call " + this.url, x);
 						Biojs.PDBajaxData[papi] = x;
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
-						if(this.num_retries > this.try_index) {
-							this.try_index += 1;
-							console.warn("Retrying API call no."+this.try_index+' ' + this.url + " --- which failed due to " + textStatus + " --- " + errorThrown);
-							jQuery.ajax(this); // http://stackoverflow.com/questions/10024469/whats-the-best-way-to-retry-an-ajax-request-on-failure-using-jquery
-							return;
-						}
-						console.error('failed thrice!', papi, Biojs.PDBajaxData[papi]);
-						Biojs.PDBajaxData[papi] = "failed";
-					}
+						console.warn("API call " + this.url + " failed due to " + textStatus + " --- " + errorThrown);
+						delete Biojs.PDBajaxData[papi];
+					},
 				})
 			);
-		}
-	});
-	jQuery.when.apply(window, deferreds).then(
-		function() {
-			var polling_callback = function() {
-				// do we have any calls in progress?
-				var any_in_progress = [], any_failed = [];
-				jQuery.each(partial_api_urls, function(pi, papi) {
-					if(Biojs.PDBajaxData[papi] == "in_progress") any_in_progress.push(papi);
-					if(Biojs.PDBajaxData[papi] == "failed") any_failed.push(papi);
-				});
-				if(any_failed.length > 0) {
-					console.error("Polling API calls. Failed!", any_failed);
+		});
+		return deferreds;
+	};
+	var find_calls_status = function() {
+		var any_in_progress = [], any_failed = [], any_absent = [];
+		jQuery.each(partial_api_urls, function(pi, papi) {
+			if(! papi in Biojs.PDBajaxData) any_absent.push(papi);
+			else if(Biojs.PDBajaxData[papi] == "in_progress") any_in_progress.push(papi);
+			else if(Biojs.PDBajaxData[papi] == "failed") any_failed.push(papi);
+		});
+		return [any_in_progress, any_failed, any_absent];
+	};
+	var mark_absent_as_failed = function() {
+		jQuery.each(partial_api_urls, function(pi, papi) {
+			if(! papi in Biojs.PDBajaxData)
+				Biojs.PDBajaxData[papi] = "failed";
+		});
+	};
+	var trial_num = 0, max_trials = 3;
+	var check_deferreds = function() {
+		var deferreds = create_deferreds();
+		console.log("check_deferreds", trial_num, deferreds);
+		jQuery.when.apply(window, deferreds).then(
+			function() {
+				console.log("success");
+				var poll_calls = function() {
+					var call_status = find_calls_status();
+					var any_in_progress = call_status[0], any_failed = call_status[1], any_absent = call_status[2];
+					console.log("call status", call_status);
+					if(any_in_progress.length > 0 || any_absent.length > 0) {
+						console.log("Polling API calls in progress.", any_in_progress, any_absent);
+						window.setTimeout( poll_calls , poll_period );
+					}
+					else if(any_failed.length > 0)
+						error_callback();
+					else
+						success_callback();
+				};
+				poll_calls();
+			},
+			function() {
+				console.log("fail");
+				trial_num ++;
+				if(trial_num >= max_trials) {
+					mark_absent_as_failed();
 					error_callback();
 				}
-				else if(any_in_progress.length > 0) {
-					console.log("Polling API calls progress.", any_in_progress);
-					window.setTimeout( polling_callback , poll_period );
-				}
-				else {
-					console.log("Polling API calls DONE.");
-					success_callback();
-				}
-			};
-			polling_callback();
-		}
-	);
+				else
+					check_deferreds();
+			}
+		);
+	};
+	check_deferreds();
+	return;
+//	for(int trial=0; trial < 3; trial++) {
+//		create deferreds for failed or absent calls
+//		when deferreds are resolved
+//			call 
+//						Biojs.PDBajaxData[papi] = "failed";
+//	}
+//	var when_success = function() { // success in all ajax requestes created above
+//		var polling_callback = function() {
+//			// do we have any calls in progress?
+//			var call_status = count_call_status();
+//			var in_progress = call_status[0], failed = call_status[1], num_absent = call_status[2];
+//			if(any_failed.length > 0) {
+//				console.error("Polling API calls. Failed!", any_failed);
+//				error_callback();
+//			}
+//			else if(any_in_progress.length > 0) { // requests not created above, but already ongoing due to previous calls to this function
+//				console.log("Polling API calls in progress.", any_in_progress);
+//				window.setTimeout( polling_callback , poll_period );
+//			}
+//			else {
+//				console.log("Polling API calls DONE.");
+//				success_callback();
+//			}
+//		};
+//		polling_callback();
+//	};
+//	var when_failed = function() { // failure in any of the ajax requests created above
+//		console.log("CHECK", this.try_index , this.num_retries);
+//		if(this.try_index >= this.num_retries) {
+//			error_callback();
+//			return;
+//		}
+//		else check_deferreds();
+//	};
+//	var check_deferreds = function() {
+//		console.log("DEFERREDS-hiiiiiiiiiiiii", deferreds.length);
+//		jQuery.when.apply(window, deferreds).then( when_success, when_failed );
+//	};
+//	check_deferreds();
 };
 
 Biojs.PDB_API_AJAX_Helper_group = function(api_url, partial_api_urls, success_callback, error_callback) {
 	// un-issued partials
 	var callgroup_url = api_url + "/callgroup/", callgroup = [];
-	var ajax_timeout = 100000, poll_period = 1000;
+	var ajax_timeout = 2000, poll_period = 1000;
 	jQuery.each(partial_api_urls, function(pi, papi) {
 		if(!(papi in Biojs.PDBajaxData)) {
 			console.log("AJAX_CALL_QUEUED", papi);
@@ -835,7 +977,7 @@ Biojs.PDB_API_AJAX_Helper_group = function(api_url, partial_api_urls, success_ca
 
 Biojs.PDB_API_AJAX_Helper_default = function(api_url, partial_api_urls, success_callback, error_callback) {
 	// un-issued partials
-	var ajax_timeout = 100000;
+	var ajax_timeout = 1000;
 	var callgroup_url = api_url + "/callgroup/" + partial_api_urls.join(",");
 	var varname = 'data_from_api_'+ (""+Math.random()).replace("0.","");
 	jQuery.ajax({

@@ -61,6 +61,7 @@ Biojs.PDBchainTopology = Biojs.extend (
 		self.config.ascheckbox = 'topo_ascheckbox_'+self.config.target;
 		self.config.raphadiv = 'topo_rapha_'+self.config.target;
 		self.config.navigator_div = 'topo_navigator_'+self.config.target;
+		self.config.status_div = 'topo_status_'+self.config.target;
 		var help_icon_div = self.config.target + "_help_icon_div";
 		// make dropdown for domains
 		var selstr = "<select id='"+self.config.domseldiv+"' onchange=topoSelectorChanged('"+self.config.target+"')>";
@@ -69,7 +70,9 @@ Biojs.PDBchainTopology = Biojs.extend (
 		// make markup
 		var some_html = Handlebars.compile(" \
 				<div style='position:relative;'> \
-					<div style='position:absolute;z-index:1000;', id='{{navigator}}'></div> \
+					<div style='position:absolute;z-index:1000;' id='{{navigator}}'></div> \
+					<div style='position:absolute;z-index:1000;opacity:0.5;margin:{{margin}}px;background-color:lightgrey;padding:{{padding}}px;height:{{width}}px;width:{{width}}px;' id={{statusdiv}}> \
+					</div> \
 					<div style='position:relative;' class='topology_raphael_canvas' id='{{raphadiv}}'></div> \
 				</div> \
 				<div style='position:relative;' class='topology_menu' id='{{menudiv}}'> \
@@ -81,12 +84,14 @@ Biojs.PDBchainTopology = Biojs.extend (
 				raphadiv:self.config.raphadiv, menudiv:self.config.menudiv,
 				resdiv:self.config.resdiv, pdbid:self.config.pdbid,
 				selstr:selstr, controls:"<div style='float:right;' id='"+help_icon_div+"'></div>",
-				navigator:self.config.navigator_div
+				width:self.config.size*0.6, padding:self.config.size*0.1, margin:self.config.size*0.1,
+				navigator:self.config.navigator_div, statusdiv:self.config.status_div
 			});
 		jQuery("#"+self.config['target']).html(some_html);
 		self.make_help_icon(help_icon_div);
 
 		self.show_message("Loading....");
+		self.show_waiting("",false);
 
 		self.previousDomainElems = null; // for clearing out any previous domain rendering
 		self.previousActivsiteElems = null;
@@ -106,7 +111,7 @@ Biojs.PDBchainTopology = Biojs.extend (
 			self.entry.makeSiftsMappings(topodata);
 			self.entry.makeStructuralCoverage(topodata);
 			self.entry.make2Dtopology(topodata);
-			self.entry.makeValidationResidueSummary(topodata);
+			//self.entry.makeValidationResidueSummary(topodata);
 			if(!self.decide_entity_chain_id()) {
 				self.show_message("Sorry, no suitable chain can be decided from given input: " + self.get_ch_ent_pid_str() + ".");
 				return;
@@ -131,13 +136,12 @@ Biojs.PDBchainTopology = Biojs.extend (
 					"/pdb/entry/entities/" + self.config["pdbid"],
 					"/pdb/entry/polymer_coverage/" + self.config["pdbid"],
 					"/mappings/" + self.config["pdbid"],
-					"/topology/entry/" + self.config["pdbid"],
-					"/validation/residuewise_outlier_summary/entry/" + self.config["pdbid"]
+					"/topology/entry/" + self.config["pdbid"]
+					//"/validation/residuewise_outlier_summary/entry/" + self.config["pdbid"]
 				],
 				successCallback,
 				function() {
-					//alert("There was an error in communicating with PDBe API - please report to pdbehelp@ebi.ac.uk");
-					document.getElementById(self.config.target).innerHTML = "Sorry, an error occurred.";
+					self.show_message("Sorry, no suitable chain can be decided from given input: " + self.get_ch_ent_pid_str() + ".");
 				}
 			);
 		}
@@ -341,14 +345,50 @@ Biojs.PDBchainTopology = Biojs.extend (
 		self.previousActivsiteElems = self.config.rapha.setFinish();
 		return;
 	},
-	
+
+	show_waiting: function(message, on) {
+		var self = this, conf = self.config, topodata = self.topodata;
+		if(!conf.waiting_image) {
+			var scripts = document.getElementsByTagName("script");
+			jQuery.each(scripts, function(si,scr) {
+				if(scr.src.match(/Biojs.PDBchainTopology.js$/))
+					conf.waiting_image = scr.src.replace(
+						/Biojs.PDBchainTopology.js/,
+						"../resources/data/pdb/images/ajax-loader.gif");
+			});
+		}
+		jQuery("#"+self.config.status_div).html(message + "<br><img width=50% src='"+conf.waiting_image+"'/>");
+		if(on)
+			jQuery("#"+self.config.status_div).show();
+		else
+			jQuery("#"+self.config.status_div).hide();
+	},
+
 	show_validation_domain: function() {
 		var self = this, conf = self.config, topodata = self.topodata;
+		if(!self.validation_api_called) {
+			self.validation_api_called = true;
+			self.show_waiting("Obtaining validation data from the PDBe API", true);
+			var promise = self.entry.makeValidationResidueSummary(topodata);
+			promise.then(
+				function() {
+					self.show_validation_domain();
+					setTimeout( function() { self.show_waiting("",false); }, 100 );
+				},
+				function() {
+					self.show_waiting("Failed to obtain validation data from the PDBe API", true);
+					setTimeout( function() { self.show_waiting("",false); }, 3000 );
+					jQuery("#"+self.config.domseldiv+" option[value='Validation']").remove();
+				}
+			).finally(function() { });
+			return;
+		}
 		var vdata = self.entry.getValidationResidueDataForChain(conf.entity_id, conf.chain_id);
 		if(!vdata) {
 			console.log("No validation info available for mol " + conf.entity_id + " chain " + conf.chain_id);
 			return;
 		}
+		self.config.rapha.setStart(); // remember all elements created for display of annotation so that they can be removed later
 		var sstypes = {coils:"red", strands:"green", helices:"blue", terms:'purple'};
 		for(var ast in sstypes) {
 			jQuery.each(topodata[ast], function(asi, ass) {
@@ -396,6 +436,8 @@ Biojs.PDBchainTopology = Biojs.extend (
 					ass.gelem.clone().attr({'fill-opacity':0.5, 'fill':"90"+gradstr});
 			});
 		}
+		self.previousDomainElems = self.config.rapha.setFinish();
+		self.respaths_to_front();
 	},
 
 	respaths_to_front: function() {
@@ -415,11 +457,11 @@ Biojs.PDBchainTopology = Biojs.extend (
 		self.change_domain_in_selector(domtype);
 		if(domtype=="Annotations")
 			return;
-		self.config.rapha.setStart(); // remember all elements created for display of annotation so that they can be removed later
 		if(domtype=="Validation") {
 			self.show_validation_domain();
 		}
 		else { // scop/cath/pfam domain
+			self.config.rapha.setStart(); // remember all elements created for display of annotation so that they can be removed later
 			var domdata = self.topodata.domains[domtype];
 			if(!domdata) { console.error("Sorry, data not available for domain type " + domtype + "."); return; }
 			for(domid in domdata) {
@@ -440,9 +482,9 @@ Biojs.PDBchainTopology = Biojs.extend (
 					}
 				}
 			}
+			self.previousDomainElems = self.config.rapha.setFinish();
+			self.respaths_to_front();
 		}
-		self.previousDomainElems = self.config.rapha.setFinish();
-		self.respaths_to_front();
 	},
 		// some sample code for gradient fill
 		//var halfgradattrib = {'fill':'90-#000-#000:50-#fff:50-#fff'};
