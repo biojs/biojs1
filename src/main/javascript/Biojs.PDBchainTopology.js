@@ -111,7 +111,6 @@ Biojs.PDBchainTopology = Biojs.extend (
 			self.entry.makeSiftsMappings(topodata);
 			self.entry.makeStructuralCoverage(topodata);
 			self.entry.make2Dtopology(topodata);
-			//self.entry.makeValidationResidueSummary(topodata);
 			if(!self.decide_entity_chain_id()) {
 				self.show_message("Sorry, no suitable chain can be decided from given input: " + self.get_ch_ent_pid_str() + ".");
 				return;
@@ -122,6 +121,8 @@ Biojs.PDBchainTopology = Biojs.extend (
 				self.show_message("Sorry, there is no topology information for " + self.get_ch_ent_pid_str() + ".");
 				return;
 			}
+			self.startResInfoCall();
+			self.startResValidationCall();
 			self.make_topodata_domains();
 			self.topoLayout();
 			self.make_navigator();
@@ -137,11 +138,10 @@ Biojs.PDBchainTopology = Biojs.extend (
 					"/pdb/entry/polymer_coverage/" + self.config["pdbid"],
 					"/mappings/" + self.config["pdbid"],
 					"/topology/entry/" + self.config["pdbid"]
-					//"/validation/residuewise_outlier_summary/entry/" + self.config["pdbid"]
 				],
 				successCallback,
 				function() {
-					self.show_message("Sorry, no suitable chain can be decided from given input: " + self.get_ch_ent_pid_str() + ".");
+					self.show_message("Sorry, there is a problem getting data from the PDBe API.");
 				}
 			);
 		}
@@ -367,25 +367,24 @@ Biojs.PDBchainTopology = Biojs.extend (
 	show_validation_domain: function() {
 		var self = this, conf = self.config, topodata = self.topodata;
 		if(!self.validation_api_called) {
-			self.validation_api_called = true;
-			self.show_waiting("Obtaining validation data from the PDBe API", true);
-			var promise = self.entry.makeValidationResidueSummary(topodata);
-			promise.then(
-				function() {
-					self.show_validation_domain();
-					setTimeout( function() { self.show_waiting("",false); }, 100 );
-				},
-				function() {
-					self.show_waiting("Failed to obtain validation data from the PDBe API", true);
-					setTimeout( function() { self.show_waiting("",false); }, 3000 );
-					jQuery("#"+self.config.domseldiv+" option[value='Validation']").remove();
-				}
-			).finally(function() { });
+			console.error("Unexpected to find uninitialized variable validation_api_called");
 			return;
+		}
+		if(self.validation_api_called == "in_progress") {
+			self.show_waiting("Obtaining validation data from the PDBe API", true);
+			setTimeout( function() { self.show_validation_domain(); }, 1000 );
+			return;
+		}
+		else if(self.validation_api_called == "failed") {
+			self.show_waiting("Failed to obtain validation data from the PDBe API", true);
+			setTimeout( function() { self.show_waiting("",false); }, 3000 );
+			jQuery("#"+self.config.domseldiv+" option[value='Validation']").remove();
 		}
 		var vdata = self.entry.getValidationResidueDataForChain(conf.entity_id, conf.chain_id);
 		if(!vdata) {
-			console.log("No validation info available for mol " + conf.entity_id + " chain " + conf.chain_id);
+			var msg = "No validation info available for molecule " + conf.entity_id + " chain " + conf.chain_id;
+			console.warn(msg);
+			setTimeout( function() { self.show_waiting(msg,false); }, 3000 );
 			return;
 		}
 		self.config.rapha.setStart(); // remember all elements created for display of annotation so that they can be removed later
@@ -1070,18 +1069,46 @@ Biojs.PDBchainTopology = Biojs.extend (
 		return ttext;
 	},
 
+	startResValidationCall: function() {
+		var self = this, conf = self.config, topodata = self.topodata;
+		if(self.validation_api_called) return;
+		self.validation_api_called = "in_progress";
+		Biojs.PDB_API_AJAX_Helper(
+			self.config.apiURL,
+			[ "/validation/residuewise_outlier_summary/entry/" + self.config["pdbid"] ],
+			function() {
+				self.entry.makeValidationResidueSummary(Biojs.PDBajaxData);
+				self.validation_api_called = "finished";
+			},
+			function() {
+				self.validation_api_called = "failed";
+				console.warn("There is a problem in obtaining residuewise validation information.");
+			}
+		);
+	},
+
+	startResInfoCall: function() {
+		var self = this, ttext = null;
+		if(self.topodata.reslist) return;
+		self.topodata.reslist = "in_progress";
+		Biojs.PDB_API_AJAX_Helper(
+			self.config.apiURL,
+			[ "/pdb/entry/residue_listing/" + self.config["pdbid"] ],
+			function() {
+				self.entry.makeResidueListing(Biojs.PDBajaxData);
+				self.topodata.reslist = self.chain.getResidueListing();
+				return self.topodata.reslist;
+			},
+			function() {
+				console.warn("There is a problem in obtaining residue listing.");
+				self.topodata.reslist = "failed";
+			}
+		);
+	},
+
 	getResInfo: function(resindex) {
 		var self = this;
-		if(!self.topodata.reslist) {
-			self.topodata.reslist = "in_progress";
-			Q.fcall( function() {
-				return self.entry.makeResidueListing(Biojs.PDBajaxData);
-			} ).then( function() {
-				self.topodata.reslist = self.chain.getResidueListing();
-			} );
-			return "in_progress";
-		}
-		else if(self.topodata.reslist == "in_progress")
+		if(self.topodata.reslist == "in_progress")
 			return "in_progress";
 		return self.topodata.reslist[resindex];
 	},
