@@ -1,3 +1,21 @@
+# DEPRECATED 
+
+## Please look at [biojs.net](http://biojs.net)
+
+Components added to this repository won't be uploaded anymore.
+This repository is only for historical purposes.
+
+-----------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 # Overview
 The aim of this project is to create a library of graphical components easy to reuse to represent biological information. A library easy to maintain and develop by identifying minimal functional units that could be used as building blocks for more complex applications. A browser independent JavaScript library easy to integrate in web applications regardless the programming language used to develop the server side.
 
