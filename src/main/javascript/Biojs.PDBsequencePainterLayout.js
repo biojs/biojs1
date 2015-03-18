@@ -140,11 +140,8 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			"/pdb/entry/summary/" + conf.pdbid,
 			"/pdb/entry/entities/" + conf.pdbid,
 			"/pdb/entry/polymer_coverage/" + conf.pdbid,
-			"/mappings/" + conf.pdbid,
 			"/pdb/entry/secondary_structure/" + conf.pdbid,
 			"/pdb/entry/binding_sites/" + conf.pdbid,
-			"/pdb/entry/residue_listing/" + conf.pdbid,
-			"/validation/residuewise_outlier_summary/entry/" + conf.pdbid
 		];
 		jQuery("#"+conf.target).html("Loading...");
 		self.get_api_data_then_layout(api_urls, 'modelled_domains_layout_callback');
@@ -159,13 +156,32 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			conf.api_url,
 			api_urls,
 			function() {
-				conf.api_data = Biojs.PDBajaxData;
-				console.log('Starting PDBsequencePainterLayout callback', success_callback, conf.api_data);
-				self[success_callback]();
+				self.get_more_optional_info(success_callback);
 			},
 			function() {
 				alert("There was an error in communicating with PDBe API - please report to pdbehelp@ebi.ac.uk");
 				document.getElementById(conf.target).innerHTML = "Sorry, an error occurred.";
+			}
+		);
+	},
+	get_more_optional_info: function(success_callback) {
+		var self = this, conf = self.configs;
+		var call_anyway = function() {
+			conf.api_data = Biojs.PDBajaxData;
+			console.log('Starting PDBsequencePainterLayout callback', success_callback, conf.api_data);
+			self[success_callback]();
+		}
+		Biojs.PDB_API_AJAX_Helper(
+			conf.api_url,
+			[
+				"/pdb/entry/residue_listing/" + conf.pdbid,
+				"/mappings/" + conf.pdbid,
+				"/validation/residuewise_outlier_summary/entry/" + conf.pdbid
+			],
+			call_anyway,
+			function() {
+				console.warn("Some optional info could not be obtained....");
+				call_anyway();
 			}
 		);
 	},
@@ -526,6 +542,10 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		var self = this, conf = self.configs;
 		var entry = self.pdb.makeEntry(conf.pdbid, conf.api_data);
 		var vsum = entry.getValidationResidueSummary(), vdata = null, elen = null;
+		if((!vsum) || vsum == null) {
+			console.log("Validation info unavailable", vsum);
+			return null;
+		}
 		jQuery.each(vsum.molecules, function(ei,einfo) { // do we have the validation summary for this chain?
 			if(einfo.entity_id != chain.getEntityId()) return;
 			elen = entry.getEntity(einfo.entity_id).getLength();
