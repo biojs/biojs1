@@ -103,20 +103,40 @@ Biojs.PDBchainTopology = Biojs.extend (
 
 		self.pdb = Biojs.getPDBdatabroker(self.config["apiURL"]);
 		var topodata = null;
-		var successCallback = function(response, callOptions) {
+		var successCallback = function() {
 			console.log('Starting PDBchainTopology callback');
-			if(!self.apidata) topodata = Biojs.PDBajaxData;
+			topodata = (!self.apidata) ?  Biojs.PDBajaxData : self.apidata;
 			self.entry = self.pdb.makeEntry(self.config["pdbid"], topodata);
 			self.entry.makeEntities(topodata);
 			self.entry.makeSiftsMappings(topodata);
 			self.entry.makeStructuralCoverage(topodata);
-			self.entry.make2Dtopology(topodata);
 			if(!self.decide_entity_chain_id()) {
 				self.show_message("Sorry, no suitable chain can be decided from given input: " + self.get_ch_ent_pid_str() + ".");
 				return;
 			}
-			jQuery('#'+self.config.resdiv).html(''); jQuery('#'+self.config.resdiv).html(self.config.pdbid+":"+self.config.chain_id);
+			if(self.apidata) {
+				topodata = self.apidata ; successCallback_1();
+			}
+			else {
+				Biojs.PDB_API_AJAX_Helper(
+					self.config.apiURL,
+					[
+						"/topology/entry/" + self.config["pdbid"] + "/chain/" + self.config.chain_id
+					],
+					successCallback_1,
+					function() {
+						self.show_message("Sorry, there is a problem getting data from the PDBe API.");
+					}
+				);
+			}
+		};
+		var successCallback_1 = function() {
+			topodata = (!self.apidata) ?  Biojs.PDBajaxData : self.apidata;
+			console.log(topodata, Biojs.PDBajaxData);
+			self.entry.make2Dtopology(topodata, self.config.chain_id);
 			self.topodata = self.chain.get2Dtopology();
+			jQuery('#'+self.config.resdiv).html('');
+			jQuery('#'+self.config.resdiv).html(self.config.pdbid+":"+self.config.chain_id);
 			if(!self.topodata) {
 				self.show_message("Sorry, there is no topology information for " + self.get_ch_ent_pid_str() + ".");
 				return;
@@ -128,7 +148,9 @@ Biojs.PDBchainTopology = Biojs.extend (
 			self.make_navigator();
 		};
 
-		if(self.apidata) { topodata = self.apidata ; successCallback(); }
+		if(self.apidata) {
+			topodata = self.apidata ; successCallback();
+		}
 		else {
 			Biojs.PDB_API_AJAX_Helper(
 				self.config.apiURL,
@@ -136,8 +158,8 @@ Biojs.PDBchainTopology = Biojs.extend (
 					"/pdb/entry/summary/" + self.config["pdbid"],
 					"/pdb/entry/entities/" + self.config["pdbid"],
 					"/pdb/entry/polymer_coverage/" + self.config["pdbid"],
-					"/mappings/" + self.config["pdbid"],
-					"/topology/entry/" + self.config["pdbid"]
+					"/mappings/" + self.config["pdbid"]
+					//"/topology/entry/" + self.config["pdbid"]
 				],
 				successCallback,
 				function() {
@@ -226,10 +248,10 @@ Biojs.PDBchainTopology = Biojs.extend (
 				}
 				else if(self.config.chain_id == ent.instances[chi].getAuthAsymId()) {
 					self.chain = ent.instances[chi];
-					if(!self.chain.get2Dtopology()) {
-						self.show_message("Sorry, no topology info for chain: " + self.get_ch_ent_pid_str() + ".");
-						return false;
-					}
+					//if(!self.chain.get2Dtopology()) {
+					//	self.show_message("Sorry, no topology info for chain: " + self.get_ch_ent_pid_str() + ".");
+					//	return false;
+					//}
 					return true;
 				}
 			}
@@ -1093,9 +1115,9 @@ Biojs.PDBchainTopology = Biojs.extend (
 		self.topodata.reslist = "in_progress";
 		Biojs.PDB_API_AJAX_Helper(
 			self.config.apiURL,
-			[ "/pdb/entry/residue_listing/" + self.config["pdbid"] ],
+			[ "/pdb/entry/residue_listing/" + self.config["pdbid"] + "/chain/" + self.config.chain_id ],
 			function() {
-				self.entry.makeResidueListing(Biojs.PDBajaxData);
+				self.entry.makeResidueListing(Biojs.PDBajaxData, self.config.chain_id);
 				self.topodata.reslist = self.chain.getResidueListing();
 				return self.topodata.reslist;
 			},

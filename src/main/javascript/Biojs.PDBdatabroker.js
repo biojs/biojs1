@@ -247,12 +247,15 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 			function() { return self.entities; }
 		);
 	},
-	makeResidueListing: function(apidata) {
+	makeResidueListing: function(apidata, chain_id) {
 		var self = this;
-		if(self.hasResidueListing()) return self.hasResidueListing();
+		var url = "/pdb/entry/residue_listing/"+self.pid;
+		if(chain_id)
+			url += "/chain/" + chain_id;
+		if(self.hasResidueListing()) return self.hasResidueListing(); // TODO when chain given
 		return ajaxORapidataHelper(
 			self.apiURL,
-			"/pdb/entry/residue_listing/"+self.pid,
+			url,
 			function(t) {
 				jQuery.each(t[self.pid].molecules, function(ei,einfo) {
 					jQuery.each(einfo.chains, function(chi,chinfo) {
@@ -391,11 +394,14 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 			function(t) { return t; }
 		);
 	},
-	make2Dtopology: function(apidata) {
+	make2Dtopology: function(apidata, chain_id) {
 		var self = this;
+		var url = "/topology/entry/"+self.pid;
+		if(chain_id)
+			url += "/chain/" + chain_id;
 		return ajaxORapidataHelper(
 			self.apiURL,
-			"/topology/entry/"+self.pid,
+			url,
 			function(t) {
 				if(self.pid in t) {
 					tt = t[self.pid];
