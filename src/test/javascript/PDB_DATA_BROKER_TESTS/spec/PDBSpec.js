@@ -7,6 +7,7 @@ describe("PDB data broker", function() {
 		var pdb = new Biojs.PDB();
 		expect(pdb).not.toBeNull();
 		expect(pdb_dev).not.toBeNull();
+		expect(pdb_dev).not.toBe(pdb);
 	});
 	it("has a unique instance per API URL", function() {
 		var pdb             = Biojs.get_PDB_instance();
@@ -22,12 +23,18 @@ describe("PDB data broker", function() {
 		expect(instantiate_again).toThrow();
 	});
 	it("can create unique PDB_Entry object with expected title", function(async_tag) {
-		var pdbid = "1cbs", entry_title = "CRYSTAL STRUCTURE OF CELLULAR RETINOIC-ACID-BINDING PROTEINS I AND II IN COMPLEX WITH ALL-TRANS-RETINOIC ACID AND A SYNTHETIC RETINOID";
 		var pdb = Biojs.get_PDB_instance();
+		// same promise for multiple make-entry calls
+		var x = pdb.make_pdb_entry("1aac");
+		var y = pdb.make_pdb_entry("1aac");
+		expect(x).toBe(y);
+		// unique entry object with correct title
+		var pdbid = "1cbs", entry_title = "CRYSTAL STRUCTURE OF CELLULAR RETINOIC-ACID-BINDING PROTEINS I AND II IN COMPLEX WITH ALL-TRANS-RETINOIC ACID AND A SYNTHETIC RETINOID";
 		pdb.make_pdb_entry(pdbid)
 		.done(function(entry) {
             expect(entry.get_title()).toEqual(entry_title);
-			expect(entry).toBe(pdb.get_pdb_entry(pdbid));
+			var same_entry = pdb.get_pdb_entry(pdbid);
+			expect(entry).toBe(same_entry);
 			async_tag();
 		})
 		.fail(function() {
@@ -35,12 +42,21 @@ describe("PDB data broker", function() {
 			async_tag();
 		});
 	});
-	it("can create expected Entity-s inside the PDB_Entry object", function() {
+	it("can create expected PDB_Entity-s inside the PDB_Entry object", function(async_tag) {
+		var pdbid = "1cbs";
 		var pdb = Biojs.get_PDB_instance();
-		var x = pdb.make_pdb_entry("1aac");
-		var y = pdb.make_pdb_entry("1aac");
-		expect(x).toBe(y);
-		x.done(function() { console.log("HIII"); });
-		y.done(function() { console.log("HELLO"); });
+		pdb.make_pdb_entry(pdbid)
+		.done(function(entry) {
+			entry.make_entities()
+			.done(function(entities) {
+				var same_ents = entry.get_entities();
+				expect(entities).toBe(same_ents);
+				var num_ents = 0;
+				for(var eid in entities)
+					num_ents += 1;
+				expect(num_ents).toBe(3);
+				async_tag();
+			});
+		});
 	});
 });
