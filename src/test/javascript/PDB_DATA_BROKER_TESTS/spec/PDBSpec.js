@@ -43,7 +43,7 @@ describe("PDB data broker", function() {
 		});
 	});
 	it("can create expected PDB_Entity-s inside the PDB_Entry object", function(async_tag) {
-		var pdbid = "1cbs";
+		var pdbid = "2qcu", expected_num_ents = 9;
 		var pdb = Biojs.get_PDB_instance();
 		pdb.make_pdb_entry(pdbid)
 		.done(function(entry) {
@@ -54,8 +54,115 @@ describe("PDB data broker", function() {
 				var num_ents = 0;
 				for(var eid in entities)
 					num_ents += 1;
-				expect(num_ents).toBe(3);
+				expect(num_ents).toEqual(expected_num_ents);
 				async_tag();
+			});
+		});
+	});
+	it("can create entity objects that provide info about uniprot & pfam mappings", function(async_tag) {
+		var pdbid = "2qcu";
+		var pdb = Biojs.get_PDB_instance();
+		pdb.make_pdb_entry(pdbid)
+		.done(function(entry) {
+			entry.make_entities()
+			.done(function(entities) {
+				jQuery.each(entities, function(eid,ent) {
+					if(!ent.is_protein())
+						return;
+					ent.make_sequence_mappings()
+					.done(function() {
+						for(var dt in {"Pfam":1, "UniProt":1}) {
+							var domains = ent.get_sequence_mappings(dt);
+							expect(1).toEqual(domains.length);
+							expect(1).toEqual(domains[0].ranges.length);
+						}
+						async_tag();
+					});
+				});
+			});
+		});
+	});
+	it("can create expected number of instances of entities", function(async_tag) {
+		var pdbid = "2qcu", expected_num_inst = {1:2, 2:6, 3:4, 4:2, 5:2, 6:3, 7:30, 8:2, 9:2};
+		var pdb = Biojs.get_PDB_instance();
+		pdb.make_pdb_entry(pdbid)
+		.done(function(entry) {
+			entry.make_entities()
+			.done(function(entities) {
+				var promises = [];
+				jQuery.each(entities, function(eid,ent) {
+					promises.push(ent.make_instances());
+				});
+				Biojs.when_no_deferred_pending(promises)
+				.done(function() {
+					var num_inst = {};
+					jQuery.each(entities, function(eid,ent) {
+						var same_instances = ent.get_instances();
+						var instances = ent.get_instances();
+						expect(instances).toBe(same_instances);
+						num_inst[ent.entity_id] = instances.length;
+					});
+					expect(num_inst).toEqual(expected_num_inst);
+					async_tag();
+				});
+			});
+		});
+	});
+	it("can create chain objects that provide info about cath, scop", function(async_tag) {
+		var pdbid = "1cbs";
+		var pdb = Biojs.get_PDB_instance();
+		pdb.make_pdb_entry(pdbid)
+		.done(function(entry) {
+			entry.make_entities()
+			.done(function(entities) {
+				jQuery.each(entities, function(eid,ent) {
+					ent.make_instances()
+					.done(function(instances) {
+						var same_instances = ent.get_instances();
+						if(!ent.is_protein())
+							return;
+						jQuery.each(instances, function(ii,inst) {
+							inst.make_sequence_mappings()
+							.done(function() {
+								expect(instances).toBe(same_instances);
+								for(var dt in {"SCOP":1, "CATH":1}) {
+									var domains = inst.get_sequence_mappings(dt);
+									expect(1).toEqual(domains.length);
+									expect(1).toEqual(domains[0].ranges.length);
+								}
+								async_tag();
+							});
+						});
+					});
+				});
+			});
+		});
+	});
+	it("can create chain objects that provide info about residue-modelling, residue-validation, binding site, sec-str", function(async_tag) {
+		var pdbid = "1cbs";
+jQuery('body').append("<br><br><br><div>HIIIIIIIIIIII</div>");
+		var pdb = Biojs.get_PDB_instance();
+		pdb.make_pdb_entry(pdbid)
+		.done(function(entry) {
+			entry.make_entities()
+			.done(function(entities) {
+				jQuery.each(entities, function(eid,ent) {
+					ent.make_instances()
+					.done(function(instances) {
+						if(!ent.is_protein_DNA_RNA())
+							return;
+						jQuery.each(instances, function(ii,inst) {
+							Biojs.when_no_deferred_pending([
+								inst.make_structural_features(),
+								//inst.make_validation_info()
+							])
+							.done(function() {
+								inst.get_binding_sites();
+								async_tag();
+							});
+						});
+					});
+				});
 			});
 		});
 	});
