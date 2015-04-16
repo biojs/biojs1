@@ -1,4 +1,4 @@
-describe("PDB data broker", function() {
+xdescribe("PDB data broker", function() {
 	it("is always defined if you include necessary javascript", function() {
 		expect(Biojs.PDB).toBeDefined();
 	});
@@ -139,8 +139,7 @@ describe("PDB data broker", function() {
 		});
 	});
 	it("can create chain objects that provide info about residue-modelling, residue-validation, binding site, sec-str", function(async_tag) {
-		var pdbid = "1cbs";
-jQuery('body').append("<br><br><br><div>HIIIIIIIIIIII</div>");
+		var pdbid = "1aac";
 		var pdb = Biojs.get_PDB_instance();
 		pdb.make_pdb_entry(pdbid)
 		.done(function(entry) {
@@ -154,10 +153,19 @@ jQuery('body').append("<br><br><br><div>HIIIIIIIIIIII</div>");
 						jQuery.each(instances, function(ii,inst) {
 							Biojs.when_no_deferred_pending([
 								inst.make_structural_features(),
-								//inst.make_validation_info()
+								inst.make_validation_info()
 							])
 							.done(function() {
-								inst.get_binding_sites();
+								var bsites = inst.get_binding_sites();
+								var secstr = inst.get_secondary_structure();
+								var reslist = inst.get_residue_listing();
+								var valinfo = inst.get_validation_info();
+								expect(1).toEqual(bsites.length);
+								expect(4).toEqual(bsites[0].residue_numbers.length);
+								expect(1).toEqual(secstr.helices.length);
+								expect(11).toEqual(secstr.strands.length);
+								expect(105).toEqual(reslist.length);
+								expect(6).toEqual(valinfo.length);
 								async_tag();
 							});
 						});
@@ -165,5 +173,50 @@ jQuery('body').append("<br><br><br><div>HIIIIIIIIIIII</div>");
 				});
 			});
 		});
+	});
+});
+
+function get_test_divid() {
+	return "testdiv_" + Math.random().toString().replace(/^../,"");
+}
+
+describe("PDB sequence layout maker", function() {
+	it("can draw a simple sequence", function() {
+		var divid = get_test_divid();
+		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
+		var lm = new Biojs.PDB_Sequence_Layout_Maker({
+			target:  divid,
+			dimensions:{
+				widths:  {left:50, middle:400, right:50},
+				heights: {top:50, bottom:50, middle:{min:100,max:400}},
+			},
+			markups: {
+				top: "top menu",
+				bottom: "bottom menu"
+			}
+		});
+		var lr1 = new Biojs.PDB_Sequence_Layout_Row({
+			height:50,
+			markups: {
+				left:"Row-1", middle:"Hello!", right:"Bye!"
+			}
+		});
+		var lr2 = new Biojs.PDB_Sequence_Layout_Row({
+			markups: {
+				left:function() { return "Row-2"; },
+				middle:"Here!", right:"Again!"
+			}
+		});
+		lm.add_row(lr1);
+		lm.add_row(lr2);
+		var flips = 0;
+		setInterval(function() {
+			if(flips < 4)
+				lr1.toggle_visibilty();
+			else
+				lr1.toggle_waiting_display();
+			flips += 1;
+		}, 1000);
+		expect(true).toBe(true);
 	});
 });

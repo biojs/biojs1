@@ -73,8 +73,44 @@ if(!Biojs.PDB_instances) {
 		});
 		return ret;
 	};
+	Biojs.get_biojs_URL = function() {
+		var url = null;
+		jQuery.each(jQuery('script'), function(ei,elem) {
+			if(elem.src.match(/Biojs.js$/)) {
+				url = elem.src;
+				return false;
+			}
+		});
+		return url;
+	};
+	Biojs.get_template = function(template_id) {
+		if(!Biojs.templates_fetched) {
+			var templates_url = Biojs.get_biojs_URL().replace(/Biojs.js$/, "../../main/resources/data/PDB_Sequence_Layout_Maker_templates.html");
+			jQuery.ajax({
+				url:templates_url,
+				crossDomain: 'true', type: 'GET',
+				async:false,
+				success:function(data) {
+					var hidden_divid = 'pdb_sequence_layout_maker_template';
+					jQuery('body').append("<div id='"+hidden_divid+"' style='display:none;'>"+data+"</div>")
+					console.log("Templates loaded.", jQuery("#"+hidden_divid));
+				}
+			});
+			Biojs.templates_fetched = true;
+		}
+		return Handlebars.compile(jQuery("#"+template_id).html(), {strict:true});
+	};
+	Biojs.string_or_func_eval = function(markup) {
+		if(!markup)
+			return "";
+		else if(typeof(markup) == typeof("astring"))
+			return markup;
+		else
+			return markup();
+	};
 	Biojs.sequence_domain_types = {"Pfam":[], "UniProt":[]};
 	Biojs.structure_domain_types = {"SCOP":[], "CATH":[]};
+	Biojs.layout_params = {"MIN_ROW_HEIGHT":20};
 };
 
 // A URL must be fetched only once - so call-based registry that stores json or promise
@@ -86,7 +122,7 @@ if(!Biojs.PDB_instances) {
 // get_X methods must return PDB objects. get_X may internally erase fetched jsons
 // promise from make_X need not always resolve to a useful return value
 // Entry has entity(-ies) has entity_instance(s) has residue(s)
-// A modelled instance or residue has model_id+altcode
+// A modelled entity instance has model_id. A modelled residue has altcode too. Can have symop too.
 // All sequence ranges are returned in terms of mmcif-res-num
 Biojs.PDB = Biojs.extend ({
 	opt: {}
@@ -137,6 +173,11 @@ Biojs.PDB = Biojs.extend ({
 	get_sec_str_url: function(pdbid) {
 		var self = this;
 		return self.options.api_url + "/pdb/entry/secondary_structure/" + pdbid;
+	}
+	,
+	get_validation_url: function(pdbid) {
+		var self = this;
+		return self.options.api_url + "/validation/residuewise_outlier_summary/entry/" + pdbid;
 	}
 	,
 	get_binding_sites_url: function(pdbid) {
@@ -349,6 +390,7 @@ Biojs.PDB_Entity = Biojs.extend ({
 		var self = this;
 		if(Biojs.undefined_or_promise(self.instances)) {
 			self.instances = [];
+			console.error("TODO Choose preferred model id before creating entity instance");
 			jQuery.each(self.api_data.in_struct_asyms, function(si, sid) {
 				self.instances.push(new Biojs.PDB_Entity_Instance({
 					pdb:self.pdb, pdbid:self.pdbid, entity_id:self.entity_id,
@@ -418,6 +460,8 @@ Biojs.PDB_Entity_Instance = Biojs.extend ({
 		self.entity_id = self.options.entity_id;
 		self.struct_asym_id = self.options.struct_asym_id;
 		self.auth_asym_id = self.options.auth_asym_id;
+		self.model_id = self.options.model_id;
+		self.symop = self.options.symop;
 		console.warn("PDB_Entity_Instance ctor needs to use polymer_coverage and ligand_monomers data");
 	}
 	,
@@ -445,6 +489,20 @@ Biojs.PDB_Entity_Instance = Biojs.extend ({
 		return self.seq_mappings[domtype];
 	}
 	,
+	make_validation_info: function() {
+		var self = this;
+		if(self.validation_info)
+			return Biojs.promise_or_resolved_promise(self.validation_info);
+		var promise = Biojs.marked_promise();
+		var ajax = self.options.pdb.multi_ajax({
+			url: self.options.pdb.get_validation_url(self.pdbid),
+			done: function() { promise.resolve(self.get_validation_info()); },
+			fail: function() { promise.reject(); }
+		});
+		self.validation_info = promise;
+		return promise;
+	}
+	,
 	make_structural_features: function() {
 		var self = this; var opts = self.options;
 		if(self.structural_features)
@@ -465,36 +523,223 @@ Biojs.PDB_Entity_Instance = Biojs.extend ({
 	get_binding_sites: function() {
 		// dependence: make_structural_features
 		var self = this;
-		if(Biojs.undefined_or_promise(self.structural_features)) {
+		if(Biojs.undefined_or_promise(self.binding_sites)) {
 			console.log("Adding structural features", self.pdbid, self.entity_id, self.struct_asym_id);
-			self.structural_features = true;
-			// binding sites
-			var sites = [], apidata = self.pdb.get_api_data(self.pdb.get_binding_sites_url(self.pdbid))[self.pdbid];
+			self.binding_sites = [];
+			var apidata = self.pdb.get_api_data(self.pdb.get_binding_sites_url(self.pdbid))[self.pdbid];
 			jQuery.each(apidata, function(bi,bd) {
 				var bound_resnums = [];
+				console.error("TODO must check entity_id here not just struct_asym!!");
 				jQuery.each(bd.site_residues, function(ri,res) {
-					if(res.entity_id == self.entity_id && res.structural_features == self.struct_asym_id)
+					//if(res.entity_id == self.entity_id && res.struct_asym_id == self.struct_asym_id)
+					if(res.struct_asym_id == self.struct_asym_id)
 						bound_resnums.push(res.residue_number);
 				});
 				if(bound_resnums.length > 0)
-					sites.push({residue_numbers:bound_resnums}); // can add more detail here later
+					self.binding_sites.push({residue_numbers:bound_resnums}); // can add more detail here later
 			});
-			self.binding_sites = sites;
-			// secondary structure
-			var secstr = {}, apidata = self.pdb.get_api_data(self.pdb.get_sec_str_url(self.pdbid))[self.pdbid];
+		}
+		return self.binding_sites;
+	}
+	,
+	get_secondary_structure: function() {
+		// dependence: make_structural_features
+		var self = this;
+		if(Biojs.undefined_or_promise(self.secondary_structure)) {
+			console.log("Adding structural features", self.pdbid, self.entity_id, self.struct_asym_id);
+			self.secondary_structure = {};
+			var apidata = self.pdb.get_api_data(self.pdb.get_sec_str_url(self.pdbid))[self.pdbid];
 			jQuery.each(apidata.molecules, function(mi,md) {
 				if(md.entity_id != self.entity_id)
 					return;
+				console.error("TODO must check entity_id here not just struct_asym!!");
 				jQuery.each(md.chains, function(ci,cd) {
 					if(cd.struct_asym_id != self.struct_asym_id)
 						return;
-					secstr = cd.secondary_structure;
+					self.secondary_structure = cd.secondary_structure;
+					return false;
 				});
 			});
-			console.log(secstr);
-			self.secondary_structure = secstr;
-			// residue listing
 		}
-		return self.binding_sites;
+		return self.secondary_structure;
+	}
+	,
+	get_residue_listing: function() {
+		// dependence: make_structural_features
+		var self = this;
+		if(Biojs.undefined_or_promise(self.residue_listing)) {
+			console.log("Adding structural features", self.pdbid, self.entity_id, self.struct_asym_id);
+			self.residue_listing = [];
+			var apidata = self.pdb.get_api_data(self.pdb.get_residue_listing_url(self.pdbid))[self.pdbid];
+			jQuery.each(apidata.molecules, function(mi,md) {
+				if(md.entity_id != self.entity_id)
+					return;
+				console.error("TODO must check entity_id here not just struct_asym!!");
+				jQuery.each(md.chains, function(ci,cd) {
+					if(cd.struct_asym_id != self.struct_asym_id)
+						return;
+					self.residue_listing = cd.residues;
+					return false;
+				});
+			});
+		}
+		return self.residue_listing;
+	}
+	,
+	get_validation_info: function() {
+		// dependence: get_validation_info
+		var self = this;
+		if(Biojs.undefined_or_promise(self.validation_info)) {
+			console.log("Adding validation info", self.pdbid, self.entity_id, self.struct_asym_id);
+			self.validation_info = [];
+			var apidata = self.pdb.get_api_data(self.pdb.get_validation_url(self.pdbid))[self.pdbid];
+			jQuery.each(apidata.molecules, function(mi,md) {
+				if(md.entity_id != self.entity_id)
+					return;
+				console.error("TODO must check entity_id here not just struct_asym!!");
+				jQuery.each(md.chains, function(ci,cd) {
+					if(cd.struct_asym_id != self.struct_asym_id)
+						return;
+					jQuery.each(cd.models, function(modi,model) {
+						if(self.model_id && model.model_id != self.model_id)
+							return;
+						self.validation_info = model.residues;
+						return false;
+					});
+				});
+			});
+		}
+		return self.validation_info;
+	}
+});
+
+
+(function () { // this is to support jQuery events not based on any dom element, copied from http://stackoverflow.com/questions/9977486/event-trigger-not-firing-in-non-dom-object
+	var topics = {};
+	if(jQuery.Topic)
+		return;
+	jQuery.Topic = function (id) {
+		var callbacks, method, topic = id && topics[id];
+		if (!topic) {
+			callbacks = jQuery.Callbacks();
+			topic = {
+				publish: callbacks.fire,
+				subscribe: callbacks.add,
+				unsubscribe: callbacks.remove
+			};
+			if (id) {
+				topics[id] = topic;
+			}
+		}
+		return topic;
+	};
+}) ();
+
+
+// Sequence layout has rows and menu at top or bottom.
+// The layout can add/remove a row.
+// A row can have menu on right or left, but middle bit has to be about sequence.
+// A row can be visible or hidden. It can request data upon becoming visible for the first time.
+// A row has one or more painters which paint into Raphael element in the middle.
+// Painters differ on consumed data and drawing style
+// Events (click, mouse-in/out) are broadcast with objects such as single/multiple residues, binding site, a helix/strand, a domain, etc.
+Biojs.PDB_Sequence_Layout_Maker = Biojs.extend ({
+	opt: {}
+ 	,
+	constructor: function(options) {
+		var self = this;
+		self.target = options.target;
+		self.dimensions = options.dimensions;
+		self.dimensions.widths.total_width = 0;
+		for(var wt in self.dimensions.widths) {
+			self.dimensions.widths.total_width += self.dimensions.widths[wt];
+		}
+		self.markups = options.markups ? options.markups : {top:"", bottom:""};
+		self.id2row = {};
+		jQuery("#"+self.target).html(self.get_markup());
+	}
+	,
+	get_markup: function(which) {
+		var self = this;
+			console.log(self.dimensions.widths.total_width, "HIIIII");
+		if(which)
+			return Biojs.string_or_func_eval(self.markups[which]);
+		else {
+			var template = Biojs.get_template("sequence_layout_maker_template");
+			var ret = template({
+				top_markup: self.get_markup("top"),
+				bottom_markup: self.get_markup("bottom"),
+				widths: self.dimensions.widths,
+				heights: self.dimensions.heights
+			});
+			console.log(ret);
+			return ret;
+		}
+	}
+	,
+	add_row: function(arow) {
+		var self = this;
+		if(self.id2row[arow.id])
+			console.warn("Not adding already added row!");
+		else {
+			jQuery("#"+self.target+" .pslm_middle_panel")
+				.append(arow.get_markup(self));
+			self.id2row[arow.id] = arow;
+		}
+	}
+});
+
+
+Biojs.PDB_Sequence_Layout_Row = Biojs.extend ({
+	opt: {}
+ 	,
+	constructor: function(options) {
+		var self = this;
+		self.id = options.id ? options.id : "row_"+Math.random().toString().replace(/^0./,"");
+		self.height = options.height ? options.height : Biojs.layout_params.MIN_ROW_HEIGHT;
+		self.markups = options.markups ? options.markups : {left:"", middle:"", right:""};
+		self.waiting = false;
+	}
+	,
+	toggle_visibilty: function() {
+		var self = this;
+		jQuery("#"+self.id).toggle();
+	}
+	,
+	get_markup: function(layout) {
+		var self = this;
+		if(layout == "left" || layout == "middle" || layout == "right") {
+			return Biojs.string_or_func_eval(self.markups[layout]);
+		}
+		else {
+			var template = Biojs.get_template("sequence_layout_row_template");
+			var ret = template({
+				widths:layout.dimensions.widths,
+				row_height:self.height, row_id:self.id,
+				left_markup:self.get_markup("left"),
+				middle_markup:self.get_markup("middle"),
+				right_markup:self.get_markup("right")
+			});
+			console.log(ret);
+			return ret;
+		}
+	}
+	,
+	toggle_waiting_display: function() {
+		var self = this;
+		//if(self.waiting)
+			//jQuery("#"+self.id+" .cell_cover").css("opacity", "0");
+		//else
+			//jQuery("#"+self.id+" .cell_cover").css("opacity", "0.5");
+		jQuery("#"+self.id+" .cell_cover").toggle();
+		self.waiting = ! self.waiting;
+	}
+});
+
+
+Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
+	opt: {}
+ 	,
+	constructor: function(options) {
 	}
 });
