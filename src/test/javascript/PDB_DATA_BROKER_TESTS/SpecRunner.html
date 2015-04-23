@@ -11,19 +11,37 @@
   <script src="lib/jasmine-2.2.0/jasmine-html.js"></script>
   <script src="lib/jasmine-2.2.0/boot.js"></script>
 
-  <!-- include source files here... -->
+  <!-- jQuery -->
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-  <script type="text/javascript" src="../../../main/javascript/Biojs.js"></script>
-  <script type="text/javascript" src="../../../main/javascript/Biojs.PDB_data_broker.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="../../../main/resources/dependencies/jquery/jquery-ui-1.10.3.custom/development-bundle/themes/base/jquery.ui.all.css"></link>
 
-  <!-- various -->
+  <!-- range slider for zoom row -->
+  <script src="../../../main/resources/dependencies/jquery/jQRangeSlider-5.1/jQAllRangeSliders-withRuler-min.js"></script>
+  <link rel="stylesheet" id="themeCSS" href="../../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/../css/classic.css">
+  <link rel="stylesheet"               href="../../../main/resources/dependencies/jquery/jQRangeSlider-5.1/demo/lib/jquery-ui/css/smoothness/jquery-ui-1.8.10.custom.css">
+
+  <!-- handlebars templating -->
   <script type="text/javascript" src="../../../main/resources/dependencies/handlebars-v1.3.0.js"></script>
-  <link   rel="stylesheet"       href="../../../main/resources/css/Biojs.PDB_Sequence_Layout_Maker.css">
-
 
   <!-- include spec files here... -->
   <script src="spec/SpecHelper.js"></script>
   <script src="spec/PDBSpec.js"></script>
+
+  <!-- Raphael -->                                                            
+  <script src="../../../main/resources/dependencies/graphics/raphael-2.1.0.js" type="text/javascript" charset="utf-8"></script>
+
+  <!-- Cufon font -->                                                         
+  <script src="http://cufon.shoqolate.com/js/cufon-yui.js" type="text/javascript"></script>
+
+  <!-- Qtip2 -->                                                              
+  <script type="text/javascript" src="../../../main/resources/dependencies/jquery/qtip2/jquery.qtip.js"></script>
+  <link rel="stylesheet" href="../../../main/resources/dependencies/jquery/qtip2/jquery.qtip.css">
+
+  <!-- biojs assets -->
+  <script type="text/javascript" src="../../../main/javascript/Biojs.js"></script>
+  <script type="text/javascript" src="../../../main/javascript/Biojs.PDB_data_broker.js"></script>
+  <link   rel="stylesheet"       href="../../../main/resources/css/Biojs.PDB_Sequence_Layout_Maker.css">
 
 </head>
 

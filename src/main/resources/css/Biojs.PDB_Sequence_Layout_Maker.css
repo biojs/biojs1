@@ -29,6 +29,28 @@
 .cell_cover {
     z-index: 10;
 	border: 0px solid green;
-	background-color:grey; opacity:0.5;
+	background-color:grey; /*opacity:0.5;*/
 	display:none;
+}
+
+
+
+
+.rangeslider_tick_1 {
+	color: yellow;
+}
+.rangeslider_tick_10 {
+	color: red;
+}
+.rangeslider_tick_100 {
+	color: green;
+}
+.rangeslider_tick_1000 {
+	color: blue;
+}
+.rangeslider_tick_10000 {
+	color: purple;
+}
+.ui-rangeSlider-label {
+	bottom:5px;
 }
