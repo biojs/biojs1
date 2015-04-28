@@ -1,4 +1,4 @@
-describe("PDB data broker", function() {
+xdescribe("PDB data broker", function() {
 	it("is always defined if you include necessary javascript", function() {
 		expect(Biojs.PDB).toBeDefined();
 	});
@@ -181,7 +181,7 @@ function get_test_divid() {
 }
 
 describe("PDB sequence layout maker", function() {
-	it("can draw a layout with rows that can hide and wait", function() {
+	xit("can draw a layout with rows that can hide and wait", function() {
 		var divid = get_test_divid();
 		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
 		var lm = new Biojs.PDB_Sequence_Layout_Maker({
@@ -291,9 +291,34 @@ describe("PDB sequence layout maker", function() {
 				]
 			}
 		}));
+		lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
+			height:row_height,
+			markups: {
+				left:"L",
+				right:"R",
+				middle: [
+					new Biojs.PDB_Sequence_Layout_Painter({
+						height:row_height, width:dims.widths.middle,
+						baseline:5, y_height:10,
+						type:"histogram", heights:[10,20,30,50,30],
+						line_attributes: {fill:"green", stroke:null},
+						tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on histogram"; } },
+						hover_attributes: {fill:"lightgreen"}
+					}),
+					new Biojs.PDB_Sequence_Layout_Painter({
+						height:row_height, width:dims.widths.middle,
+						baseline:5, y_height:10,
+						type:"connectors", index_pairs:[[10,20], [20,15]],
+						line_attributes: {fill:"green", stroke:null},
+						tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on connector"; } },
+						hover_attributes: {fill:"lightgreen"}
+					})
+				]
+			}
+		}));
 		expect(true).toBe(true);
 	});
-	it("can draw a layout where rows show waiting message while painter fetches data, and row hides if fetching fails for all painters", function() {
+	xit("can draw a layout where rows show waiting message while painter fetches data, and row hides if fetching fails for all painters", function() {
 		var divid = get_test_divid();
 		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
 		var dims = {

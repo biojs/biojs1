@@ -957,11 +957,23 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 					self.setup_tooltip();
 					self.setup_hover();
 				}
+				else if(self.type == "histogram") {
+					self.draw_histogram();
+				}
+				else if(self.type == "connectors") {
+					self.draw_connectors();
+				}
 				else if(self.type != "zoom")
-					throw "Unknown domain type! " + self.type;
+					throw "Unknown painter type! " + self.type;
 			}
 		});
 		return self.render_after_promise;
+	}
+	,
+	draw_histogram: function() {
+	}
+	,
+	draw_connectors: function() {
 	}
 	,
 	draw_points: function() {
