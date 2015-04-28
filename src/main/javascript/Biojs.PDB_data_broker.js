@@ -692,6 +692,7 @@ Biojs.PDB_Sequence_Layout_Maker = Biojs.extend ({
 		}
 		self.markups = options.markups ? options.markups : {top:"", bottom:""};
 		self.seq_font_size = options.seq_font_size ? options.seq_font_size : 8;
+		self.num_slots = options.num_slots;
 		self.units_per_index = options.units_per_index ?  options.units_per_index : Math.floor(self.dimensions.widths.middle / self.num_slots);
 		console.log("Units per index", self.units_per_index, options.units_per_index);
 		self.id2row = {};
@@ -718,6 +719,8 @@ Biojs.PDB_Sequence_Layout_Maker = Biojs.extend ({
 		var self = this;
 		arow.seq_font_size = self.seq_font_size;
 		arow.units_per_index = self.units_per_index;
+		arow.num_slots = self.num_slots;
+console.log("here", self.num_slots);
 		if(self.id2row[arow.id])
 			console.warn("Not adding already added row!");
 		else {
@@ -821,9 +824,13 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		self.ranges = options.ranges;
 		self.sequence = options.sequence;
 		self.color = options.color ? options.color : "green";
-		self.seq_baseline = options.seq_baseline ? options.seq_baseline : 10;
-		self.seq_attributes = options.seq_attributes ? options.seq_attributes : 10;
+		self.baseline = options.baseline ? options.baseline : 10;
+		self.y_height = options.y_height ? options.y_height : 10;
+		self.seq_attributes = options.seq_attributes ? options.seq_attributes : {fill:"red"};
+		self.shape_attributes = options.shape_attributes ? options.shape_attributes : {fill:"red"};
+		self.hover_attributes = options.hover_attributes;
 		self.tooltip = options.tooltip;
+		self.indices = options.indices;
 	}
 	,
 	range_to_units: function(start, end) {
@@ -856,8 +863,8 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		if(self.rendered) // attempt rendering only once
 			return;
 		self.rendered = true;
-   		self.px_per_index = self.width/self.num_slots;
-		self.current_zoom_indices = [0, self.num_slots-1];
+   		self.px_per_index = self.width/self.row.num_slots;
+		self.current_zoom_indices = [0, self.row.num_slots-1];
 		if(self.type == "zoom")
 			self.draw_zoombar();
 		else {
@@ -867,18 +874,41 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 				self.current_zoom_indices = [edata.start, edata.stop];
 				self.zoom_rapha_to_range(edata.start, edata.stop);
 			});
-			if(self.type == "domain") {
-				self.draw_domain();
-				self.zoom_rapha_to_range(0, self.num_slots-1);
-				self.setup_tooltip();
-			}
-			else if(self.type == "zoomable_sequence") {
-				self.draw_sequence(0, self.num_slots);
+			if(self.type == "zoomable_sequence") {
+				self.draw_sequence(0, self.row.num_slots);
 				jQuery.Topic("ZoomEvent").subscribe(function(edata) {
 					self.draw_sequence(edata.start, edata.stop);
 				});
 			}
+			else if(self.type == "domain") {
+				self.draw_domain();
+				self.zoom_rapha_to_range(0, self.row.num_slots-1);
+				self.setup_tooltip();
+				self.setup_hover();
+			}
+			else if(self.type == "points") {
+				self.draw_points();
+				self.zoom_rapha_to_range(0, self.row.num_slots-1);
+				self.setup_tooltip();
+				self.setup_hover();
+			}
+			else if(self.type != "zoom")
+				throw "Unknown domain type! " + self.type;
 		}
+	}
+	,
+	draw_points: function() {
+		var self = this;
+		console.log("Drawing painter", self, "points", self.indices);
+		self.rapha_elems = [];
+		jQuery.each(self.indices, function(ri, ar) {
+			//console.log(ar, self.row);
+			var aru = self.range_to_units(ar, ar);
+			self.rapha_elems.push(
+				self.row.get_raphael()
+				.rect(aru[0], self.baseline, aru[1]-aru[0], self.y_height).attr(self.shape_attributes)
+			);
+		});
 	}
 	,
 	draw_domain: function() {
@@ -890,7 +920,7 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 			var aru = self.range_to_units(ar[0], ar[1]);
 			self.rapha_elems.push(
 				self.row.get_raphael()
-				.rect(aru[0], 0, aru[1]-ar[0], 10).attr({fill:"red",stroke:null})
+				.rect(aru[0], self.baseline, aru[1]-aru[0], self.y_height).attr(self.shape_attributes)
 			);
 		});
 	}
@@ -917,7 +947,33 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 			console.log("Cufon font", self.row.get_raphael().getFont("Pseudo APL"));
 		}
 		return self.row.get_raphael().getFont("Pseudo APL");
-	},
+	}
+	,
+	setup_hover: function() {
+		var self = this;
+		if(!self.hover_attributes) return;
+		jQuery.each(self.rapha_elems, function(ri, relem) {
+			jQuery(relem.node).mouseenter( function(e) {
+				jQuery.each(self.rapha_elems, function(ai, anelem) {
+					if(!anelem.data('actual_attr')) {
+						var pre_glow_attribs = {};
+						for(var k in self.hover_attributes)
+							pre_glow_attribs[k] = anelem.attr(k);
+						anelem.data('actual_attr', pre_glow_attribs);
+					}
+					anelem.attr(self.hover_attributes);
+				});
+			} );
+		});
+		jQuery.each(self.rapha_elems, function(ri, relem) {
+			jQuery(relem.node).mouseleave( function(e) {
+				jQuery.each(self.rapha_elems, function(ai, anelem) {
+					anelem.attr(anelem.data('actual_attr'));
+				});
+			} );
+		});
+	}
+	,
 	draw_sequence: function(zoom_from_index, zoom_till_index) {
 		var self = this, conf = self.configs;
 		// shd seq be shown at all at this zoom level?
@@ -960,9 +1016,9 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 				self.rapha_elems.seq_elem = null;
 				console.log("REMOVED earlier sequence element-----------------------------------");//return;
 			}
-			var seq_y = self.seq_baseline;
+			var seq_y = self.baseline;
 			self.rapha_elems.seq_elem =
-					self.row.get_raphael().print_precise(0, self.seq_baseline, seq.substring(seq_start,seq_stop+1), ofont, fontsize, "middle", starts)
+					self.row.get_raphael().print_precise(0, self.baseline, seq.substring(seq_start,seq_stop+1), ofont, fontsize, "middle", starts)
 					.attr(self.seq_attributes);
 			self.seq_start = seq_start;
 			self.seq_stop = seq_stop;
@@ -975,7 +1031,7 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 	draw_zoombar: function() {
 		var self = this;
 		//self.rapha = Raphael(self.divid, self.width, self.height);
-		var minval = 0, maxval = self.num_slots-1;
+		var minval = 0, maxval = self.row.num_slots-1;
 		console.log("Rendering zoom bar with range", minval, maxval, "width", self.width, "pixels/slot", self.px_per_index);
 		var tickorder = [10000,10000,1000,100,10,1];
 		if(self.px_per_index > 1) {}
@@ -1047,9 +1103,7 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 				style: { 'classes': 'qtip-bootstrap qtip-shadow qtip-rounded' },
 				events: {
 					move: function(ev,api) {
-						// find index and ranges which are hovered upon
 						var seqindex = self.get_index_from_mouse_event(relem.node, ev.originalEvent);
-						// change tooltip
 						var newtip = self.get_tooltip_text(seqindex);
 						var qapi = jQuery(relem.node).data('qtip');
     	           		qapi.options.content.text = newtip; // update content stored in options

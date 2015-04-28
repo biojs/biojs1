@@ -226,17 +226,18 @@ describe("PDB sequence layout maker", function() {
 			widths:  {left:50, middle:400, right:50},
 			heights: {top:50, bottom:50, middle:{min:100,max:400}},
 		};
+		var seq_length = 95, row_height = 50;
 		var lm = new Biojs.PDB_Sequence_Layout_Maker({
 			target:  divid,
 			dimensions: dims,
 			markups: {
-				top: "Zoomable sequence, domains and point annotations, index-sensitive tooltips",
+				top: "Zoomable sequence, domains and point annotations, index-sensitive tooltips and hovers",
 				bottom: "Make sure it all works!"
 			},
 			seq_font_size:16, // this should be uniform across rows & painters
-			units_per_index:16 // fiddle this
+			units_per_index:16, // fiddle this
+			num_slots:seq_length, // canvas width will be divided these many pieces of equal width
 		});
-		var seq_length = 95, row_height = 50;
 		var random_seq_1 = "", random_seq_2 = "";
 		for(var si=0; si < seq_length; si++) {
 			//random_seq_1 += ("ABCD")[Math.floor(Math.random()*4)];
@@ -249,7 +250,6 @@ describe("PDB sequence layout maker", function() {
 				left:"Z",
 				middle: [ // single painter for zoom row
 					new Biojs.PDB_Sequence_Layout_Painter({
-						num_slots:seq_length, // canvas width will be divided these many pieces of equal width
 						height:row_height, width:dims.widths.middle,
 						type:"zoom"
 					})
@@ -263,26 +263,29 @@ describe("PDB sequence layout maker", function() {
 				right:"E",
 				middle: [ // multiple painters for a non-zoom row
 					new Biojs.PDB_Sequence_Layout_Painter({
-						num_slots:seq_length, // canvas width will be divided these many pieces of equal width
 						height:row_height, width:dims.widths.middle,
+						baseline:5, y_height:10,
 						type:"domain", ranges: [[0,10],[90,94]], // one painter per (possibly multi-range) domain, 0-based indices of ranges
-						tooltip:{ func: function(painter, index) { return "tooltip at index " + index; } }
+						shape_attributes: {fill:"green", stroke:null},
+						tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on a split green domain"; } },
+						hover_attributes: {fill:"lightgreen"}
 					}),
 					new Biojs.PDB_Sequence_Layout_Painter({
-						num_slots:seq_length, // canvas width will be divided these many pieces of equal width
 						height:row_height, width:dims.widths.middle,
-						type:"points", indices: [[0,10],[90,94]] // one painter per (possibly multi-range) domain, 0-based indices of ranges
+						baseline:25, y_height:5,
+						type:"points", indices: [3,19,20,26,36], // one painter per (possibly multi-range) domain, 0-based indices of ranges
+						shape_attributes: {fill:"red", stroke:null},
+						tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on red points"; } },
+						hover_attributes: {fill:"yellow"}
 					}),
 					new Biojs.PDB_Sequence_Layout_Painter({
-						num_slots:seq_length, // canvas width will be divided these many pieces of equal width
 						height:row_height, width:dims.widths.middle,
-						type:"zoomable_sequence", sequence:random_seq_1, seq_baseline:20,
+						type:"zoomable_sequence", sequence:random_seq_1, baseline:20,
 						seq_attributes: {stroke:"black"}
 					}),
 					new Biojs.PDB_Sequence_Layout_Painter({
-						num_slots:seq_length, // canvas width will be divided these many pieces of equal width
 						height:row_height, width:dims.widths.middle,
-						type:"zoomable_sequence", sequence:random_seq_2, seq_baseline:10,
+						type:"zoomable_sequence", sequence:random_seq_2, baseline:10,
 						seq_attributes: {fill:"black"}
 					})
 				]
