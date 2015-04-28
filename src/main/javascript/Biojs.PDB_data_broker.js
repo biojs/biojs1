@@ -8,10 +8,13 @@ if(!Biojs.PDB_instances) {
 		}
 		return Biojs.PDB_instances[opts.api_url];
 	};
-	Biojs.marked_promise = function() {
-		var promise = new jQuery.Deferred();
+	Biojs.mark_promise = function(promise) {
 		promise.PDB_data_broker_marker = Biojs.get_random_string("marker");
 		return promise;
+	};
+	Biojs.marked_promise = function() {
+		var promise = new jQuery.Deferred();
+		return Biojs.mark_promise(promise);
 	};
 	Biojs.is_promise = function(maybe_promise) {
 		try {
@@ -20,6 +23,28 @@ if(!Biojs.PDB_instances) {
 		}
 		catch(e) {}
 		return false;
+	};
+	Biojs.delayed_promise = function(num_millisec, state) {
+		var prom = Biojs.marked_promise();
+		setTimeout(function() {
+			if(state == "resolved")
+				prom.resolve();
+			else if(state == "rejected")
+				prom.reject();
+			else
+				throw "Can't understand promise state!!"
+		}, num_millisec);
+		return prom;
+	};
+	Biojs.trivial_resolved_promise = function() {
+		var ret = Biojs.marked_promise();
+		ret.resolve();
+		return ret;
+	};
+	Biojs.trivial_rejected_promise = function() {
+		var ret = Biojs.marked_promise()
+		ret.reject();
+		return ret;
 	};
 	Biojs.get_random_string = function(prefix) {
 		return prefix + "_" + Math.random().toString().replace(/^0./,"");
@@ -35,6 +60,9 @@ if(!Biojs.PDB_instances) {
 	};
 	Biojs.when_no_deferred_pending = function(deferreds) {
 		// returns a promise that always resolves, never rejects
+		// promise resolves when all deferreds have failed or succeeded
+		if(deferreds.length == 0)
+			return Biojs.trivial_resolved_promise();
 		var promise = Biojs.marked_promise();
 		jQuery.each(deferreds, function(di,adef) {
 			adef.always(function() {
@@ -110,6 +138,12 @@ if(!Biojs.PDB_instances) {
 			return markup;
 		else
 			return markup();
+	};
+	Biojs.eval_if_function = function(some) {
+		if(jQuery.isFunction(some))
+			return some();
+		else
+			return some;
 	};
 	Biojs.sequence_domain_types = {"Pfam":[], "UniProt":[]};
 	Biojs.structure_domain_types = {"SCOP":[], "CATH":[]};
@@ -231,15 +265,9 @@ Biojs.PDB = Biojs.extend ({
 		};
 		if(args.url in self.PDB_API_DATA) {
 			var val = self.PDB_API_DATA[args.url];
-			var trivial_resolved_promise = function() {
-				return Biojs.marked_promise().resolve().promise();
-			};
-			var trivial_rejected_promise = function() {
-				return Biojs.marked_promise().reject().promise();
-			};
 			if(val == "failed") {
 				fail_function();
-				return trivial_rejected_promise();
+				return Biojs.trivial_rejected_promise();
 			}
 			else if(Biojs.is_promise(val)) {
 				console.log("Return previous promise", val);
@@ -247,7 +275,7 @@ Biojs.PDB = Biojs.extend ({
 			}
 			else if(val == "consumed" || val instanceof Object) {
 				done_function();
-				return trivial_resolved_promise();
+				return Biojs.trivial_resolved_promise();
 			}
 			else
 				throw "Unexpected state of PDB_API_DATA for " + args.url + ":" + val;
@@ -373,6 +401,16 @@ Biojs.PDB_Entity = Biojs.extend ({
 	is_protein: function() {
 		var self = this;
 		return (self.api_data.molecule_type == 'polypeptide(L)');
+	}
+	,
+	get_sequence: function() {
+		var self = this;
+		return self.api_data.sequence;
+	}
+	,
+	get_length: function() {
+		var self = this;
+		return self.api_data.length;
 	}
 	,
 	is_protein_DNA_RNA: function() {
@@ -686,10 +724,10 @@ Biojs.PDB_Sequence_Layout_Maker = Biojs.extend ({
 		var self = this;
 		self.target = options.target;
 		self.dimensions = options.dimensions;
-		self.dimensions.widths.total_width = 0;
-		for(var wt in self.dimensions.widths) {
-			self.dimensions.widths.total_width += self.dimensions.widths[wt];
-		}
+		var total_width = 0;
+		for(var wt in self.dimensions.widths)
+			total_width += self.dimensions.widths[wt];
+		self.dimensions.widths.total_width = total_width;
 		self.markups = options.markups ? options.markups : {top:"", bottom:""};
 		self.seq_font_size = options.seq_font_size ? options.seq_font_size : 8;
 		self.num_slots = options.num_slots;
@@ -720,7 +758,6 @@ Biojs.PDB_Sequence_Layout_Maker = Biojs.extend ({
 		arow.seq_font_size = self.seq_font_size;
 		arow.units_per_index = self.units_per_index;
 		arow.num_slots = self.num_slots;
-console.log("here", self.num_slots);
 		if(self.id2row[arow.id])
 			console.warn("Not adding already added row!");
 		else {
@@ -757,7 +794,7 @@ Biojs.PDB_Sequence_Layout_Row = Biojs.extend ({
 				// take markup from only first painter!
 				var ret_markup = null;
 				jQuery.each(self.markups[layout], function(pi, painter) {
-					console.log(layout, self.markups[layout]);
+					//console.log(layout, self.markups[layout]);
 					if(painter.type == "zoom" && self.markups[layout].length > 1)
 						throw "Can't render a zoom row with non-zoom painter";
 					var markup = painter.get_markup(self);
@@ -781,12 +818,36 @@ Biojs.PDB_Sequence_Layout_Row = Biojs.extend ({
 	}
 	,
 	render_painters: function() {
+		// painter.render can return a promise, and row-waiting will end when all promises are resolved either way
 		var self = this;
+		self.toggle_waiting_display("Wait...");
+		var promises = [];//[ Biojs.trivial_resolved_promise() ];
 		if(self.markups.middle instanceof Array) {
 			jQuery.each(self.markups.middle, function(pi,painter) {
-				painter.render();
+				var ret = painter.render();
+				if(Biojs.is_promise(ret))
+					promises.push(ret);
 			});
 		}
+		Biojs.when_no_deferred_pending(promises) // this always resolves, so only done() reqd
+		.done(function() {
+			var num_rejected = 0;
+			jQuery.each(promises, function(pi,ps) {
+				if(ps.state() == "rejected")
+					num_rejected += 1;
+			});
+			self.toggle_waiting_display();
+			if(num_rejected > 0) {
+				if(num_rejected == promises.length) {
+					self.toggle_waiting_display("No data could be fetched this row. The row will vanish soon.");
+					setTimeout(function() { self.toggle_visibilty(); }, 3000);
+				}
+				else {
+					self.toggle_waiting_display("Some data could not be fetched for this row.");
+					setTimeout(function() { self.toggle_waiting_display(); }, 2000);
+				}
+			}
+		});
 	}
 	,
 	toggle_waiting_display: function(message) {
@@ -822,6 +883,7 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		self.width = options.width;
 		self.type = options.type;
 		self.ranges = options.ranges;
+		self.indices = options.indices;
 		self.sequence = options.sequence;
 		self.color = options.color ? options.color : "green";
 		self.baseline = options.baseline ? options.baseline : 10;
@@ -830,7 +892,8 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		self.shape_attributes = options.shape_attributes ? options.shape_attributes : {fill:"red"};
 		self.hover_attributes = options.hover_attributes;
 		self.tooltip = options.tooltip;
-		self.indices = options.indices;
+		self.render_after_promise = options.render_after_promise ?
+			options.render_after_promise : Biojs.trivial_resolved_promise();
 	}
 	,
 	range_to_units: function(start, end) {
@@ -865,43 +928,48 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		self.rendered = true;
    		self.px_per_index = self.width/self.row.num_slots;
 		self.current_zoom_indices = [0, self.row.num_slots-1];
-		if(self.type == "zoom")
-			self.draw_zoombar();
-		else {
-			if(jQuery("#"+self.divid).html() == "") // don't create Raphael elements twice per row
-				self.row.set_raphael(new Raphael(self.divid, self.width, self.height));
+		if(self.type != "zoom" && jQuery("#"+self.divid).html() == "") { // create Raphael element only once
+			self.row.set_raphael(new Raphael(self.divid, self.width, self.height));
 			jQuery.Topic("ZoomEvent").subscribe(function(edata) {
 				self.current_zoom_indices = [edata.start, edata.stop];
-				self.zoom_rapha_to_range(edata.start, edata.stop);
+				self.zoom_rapha_to_range();
 			});
-			if(self.type == "zoomable_sequence") {
-				self.draw_sequence(0, self.row.num_slots);
-				jQuery.Topic("ZoomEvent").subscribe(function(edata) {
-					self.draw_sequence(edata.start, edata.stop);
-				});
-			}
-			else if(self.type == "domain") {
-				self.draw_domain();
-				self.zoom_rapha_to_range(0, self.row.num_slots-1);
-				self.setup_tooltip();
-				self.setup_hover();
-			}
-			else if(self.type == "points") {
-				self.draw_points();
-				self.zoom_rapha_to_range(0, self.row.num_slots-1);
-				self.setup_tooltip();
-				self.setup_hover();
-			}
-			else if(self.type != "zoom")
-				throw "Unknown domain type! " + self.type;
 		}
+		self.render_after_promise.done(function() {
+			if(self.type == "zoom")
+				self.draw_zoombar();
+			else {
+				if(self.type == "zoomable_sequence") {
+					self.draw_sequence(0, self.row.num_slots);
+					jQuery.Topic("ZoomEvent").subscribe(function(edata) {
+						self.draw_sequence(edata.start, edata.stop);
+					});
+				}
+				else if(self.type == "domain") {
+					self.draw_domain();
+					self.zoom_rapha_to_range();
+					self.setup_tooltip();
+					self.setup_hover();
+				}
+				else if(self.type == "points") {
+					self.draw_points();
+					self.zoom_rapha_to_range();
+					self.setup_tooltip();
+					self.setup_hover();
+				}
+				else if(self.type != "zoom")
+					throw "Unknown domain type! " + self.type;
+			}
+		});
+		return self.render_after_promise;
 	}
 	,
 	draw_points: function() {
 		var self = this;
 		console.log("Drawing painter", self, "points", self.indices);
+		var indices = Biojs.eval_if_function(self.indices);
 		self.rapha_elems = [];
-		jQuery.each(self.indices, function(ri, ar) {
+		jQuery.each(indices, function(ri, ar) {
 			//console.log(ar, self.row);
 			var aru = self.range_to_units(ar, ar);
 			self.rapha_elems.push(
@@ -913,9 +981,10 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 	,
 	draw_domain: function() {
 		var self = this;
-		console.log("Drawing painter", self, "domains", self.ranges);
+		var domain_ranges = Biojs.eval_if_function(self.ranges);
+		console.log("Drawing painter", self, "domains", domain_ranges);
 		self.rapha_elems = [];
-		jQuery.each(self.ranges, function(ri, ar) {
+		jQuery.each(domain_ranges, function(ri, ar) {
 			//console.log(ar, self.row);
 			var aru = self.range_to_units(ar[0], ar[1]);
 			self.rapha_elems.push(
@@ -925,8 +994,10 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		});
 	}
 	,
-	zoom_rapha_to_range: function(zoom_from_index, zoom_till_index) {
+	zoom_rapha_to_range: function() {
 		var self = this;
+		var zoom_from_index = self.current_zoom_indices[0];
+		var zoom_till_index = self.current_zoom_indices[1];
 		var start = zoom_from_index*self.row.units_per_index, width = (zoom_till_index-zoom_from_index+1)*self.row.units_per_index;
 		self.row.get_raphael().setViewBox(start, 0, width, self.height, false);
 		self.row.get_raphael().canvas.setAttribute('preserveAspectRatio', 'none'); // TODO no equivalent fix for IE 6/7/8?

@@ -1,4 +1,4 @@
-xdescribe("PDB data broker", function() {
+describe("PDB data broker", function() {
 	it("is always defined if you include necessary javascript", function() {
 		expect(Biojs.PDB).toBeDefined();
 	});
@@ -181,7 +181,7 @@ function get_test_divid() {
 }
 
 describe("PDB sequence layout maker", function() {
-	xit("can draw a layout with rows that can hide and wait", function() {
+	it("can draw a layout with rows that can hide and wait", function() {
 		var divid = get_test_divid();
 		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
 		var lm = new Biojs.PDB_Sequence_Layout_Maker({
@@ -191,8 +191,8 @@ describe("PDB sequence layout maker", function() {
 				heights: {top:50, bottom:50, middle:{min:100,max:400}},
 			},
 			markups: {
-				top: "top menu",
-				bottom: "bottom menu"
+				top: "Rows can hide and show waiting message",
+				bottom: "Make sure it all works!"
 			}
 		});
 		var lr1 = new Biojs.PDB_Sequence_Layout_Row({
@@ -259,8 +259,8 @@ describe("PDB sequence layout maker", function() {
 		lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
 			height:row_height,
 			markups: {
-				left:"E",
-				right:"E",
+				left:"L",
+				right:"R",
 				middle: [ // multiple painters for a non-zoom row
 					new Biojs.PDB_Sequence_Layout_Painter({
 						height:row_height, width:dims.widths.middle,
@@ -291,6 +291,140 @@ describe("PDB sequence layout maker", function() {
 				]
 			}
 		}));
+		expect(true).toBe(true);
+	});
+	it("can draw a layout where rows show waiting message while painter fetches data, and row hides if fetching fails for all painters", function() {
+		var divid = get_test_divid();
+		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
+		var dims = {
+			widths:  {left:50, middle:400, right:50},
+			heights: {top:50, bottom:50, middle:{min:100,max:400}},
+		};
+		var row_height = 50;
+		var pid = "1cbs", eid = 1;
+		var pdb = Biojs.get_PDB_instance();
+		pdb.make_pdb_entry(pid)
+		.done(function(entry) {
+			entry.make_entities()
+			.done(function(entities) {
+				var ent = entry.get_entity(eid);
+				var lm = new Biojs.PDB_Sequence_Layout_Maker({
+					target:  divid,
+					dimensions: dims,
+					markups: {
+						top: "Row waits while painters fetch data and hides if fetching fails for all rows",
+						bottom: "Make sure it all works!"
+					},
+					seq_font_size:16, // this should be uniform across rows & painters
+					units_per_index:16, // fiddle this
+					num_slots:ent.get_length()
+				});
+				lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
+					height:row_height,
+					markups: {
+						left:"Z",
+						middle: [ // single painter for zoom row
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								type:"zoom"
+							})
+						]
+					}
+				}));
+				lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
+					height:row_height,
+					markups: {
+						left:"L",
+						right:"R",
+						middle: [ // multiple painters for a non-zoom row
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								baseline:5, y_height:10,
+								type:"domain",
+								shape_attributes: {fill:"green", stroke:null},
+								tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on a split green domain"; } },
+								hover_attributes: {fill:"lightgreen"},
+								render_after_promise:Biojs.delayed_promise(5000, "resolved"),
+								ranges:function() { return [[40,50]]; }
+							}),
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								type:"zoomable_sequence", sequence:ent.get_sequence(), baseline:20,
+								seq_attributes: {stroke:"red"}
+							}),
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								baseline:5, y_height:10,
+								type:"domain",
+								shape_attributes: {fill:"green", stroke:null},
+								tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on a split green domain"; } },
+								hover_attributes: {fill:"lightgreen"},
+								render_after_promise:Biojs.delayed_promise(1000, "resolved"),
+								ranges:function() { return [[10,20]]; }
+							})
+						]
+					}
+				}));
+				lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
+					height:row_height,
+					markups: {
+						left:"L",
+						right:"R",
+						middle: [ // multiple painters for a non-zoom row
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								baseline:5, y_height:10,
+								type:"domain",
+								shape_attributes: {fill:"green", stroke:null},
+								tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on a split green domain"; } },
+								hover_attributes: {fill:"lightgreen"},
+								render_after_promise:Biojs.delayed_promise(5000, "resolved"),
+								ranges:function() { return [[40,50]]; }
+							}),
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								baseline:5, y_height:10,
+								type:"domain",
+								shape_attributes: {fill:"green", stroke:null},
+								tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on a split green domain"; } },
+								hover_attributes: {fill:"lightgreen"},
+								render_after_promise:Biojs.delayed_promise(1000, "rejected"),
+								ranges:function() { return [[10,20]]; }
+							})
+						]
+					}
+				}));
+				lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
+					height:row_height,
+					markups: {
+						left:"E",
+						right:"E",
+						middle: [ // multiple painters for a non-zoom row
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								baseline:5, y_height:10,
+								type:"domain",
+								shape_attributes: {fill:"green", stroke:null},
+								tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on a split green domain"; } },
+								hover_attributes: {fill:"lightgreen"},
+								render_after_promise:Biojs.delayed_promise(5000, "rejected"),
+								ranges:function() { return [[40,50]]; }
+							}),
+							new Biojs.PDB_Sequence_Layout_Painter({
+								height:row_height, width:dims.widths.middle,
+								baseline:5, y_height:10,
+								type:"domain",
+								shape_attributes: {fill:"green", stroke:null},
+								tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on a split green domain"; } },
+								hover_attributes: {fill:"lightgreen"},
+								render_after_promise:Biojs.delayed_promise(1000, "rejected"),
+								ranges:function() { return [[10,20]]; }
+							})
+						]
+					}
+				}));
+			});
+		});
 		expect(true).toBe(true);
 	});
 });
