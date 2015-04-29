@@ -884,6 +884,8 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		self.type = options.type;
 		self.ranges = options.ranges;
 		self.indices = options.indices;
+		self.index_pairs = options.index_pairs;
+		self.heights = options.heights;
 		self.sequence = options.sequence;
 		self.color = options.color ? options.color : "green";
 		self.baseline = options.baseline ? options.baseline : 10;
@@ -959,9 +961,15 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 				}
 				else if(self.type == "histogram") {
 					self.draw_histogram();
+					self.zoom_rapha_to_range();
+					self.setup_tooltip();
+					self.setup_hover();
 				}
 				else if(self.type == "connectors") {
 					self.draw_connectors();
+					self.zoom_rapha_to_range();
+					self.setup_tooltip();
+					self.setup_hover();
 				}
 				else if(self.type != "zoom")
 					throw "Unknown painter type! " + self.type;
@@ -971,9 +979,61 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 	}
 	,
 	draw_histogram: function() {
+		var self = this;
+		console.log("Drawing painter", self, "histogram", self.heights);
+		var heights = Biojs.eval_if_function(self.heights);
+		self.rapha_elems = [];
+		var max_height = -1e10, min_height = 1e10;
+		jQuery.each(heights, function(ri, ht) { // find min max
+			ht *= -1; // to make +ve go up and -ve go down
+			if(max_height < ht)
+				max_height = ht;
+			if(min_height > ht)
+				min_height = ht;
+		});
+		if(max_height <= 0 && min_height <= 0)
+			max_height = 0;
+		else if(max_height >= 0 && min_height >= 0)
+			min_height = 0;
+		//self.row.get_raphael().path(["M", 0, self.baseline, "L", 100, self.baseline]);
+		//self.row.get_raphael() .path(["M", 0, self.baseline+self.y_height, "L", 100, self.baseline+self.y_height]);
+		var y_start = self.baseline, y_stop = self.baseline + self.y_height; // fit histogram in this y-band
+		var given_y_to_rapha_y = function(gy) {
+			return (y_stop-y_start) * (gy-min_height) / (max_height-min_height) + y_start;
+		}
+		jQuery.each(heights, function(ri, ht) {
+			if(ht==0)
+				return;
+			ht *= -1; // to make +ve go up and -ve go down
+			ri = parseInt(ri);
+			// draw box from 0-height to given-height
+			var aru = self.range_to_units(ri, ri);
+			self.rapha_elems.push(
+				self.row.get_raphael()
+					.path(["M", aru[0], given_y_to_rapha_y(0), "L", aru[1], given_y_to_rapha_y(0),
+						"L", aru[1], given_y_to_rapha_y(ht), "L", aru[0], given_y_to_rapha_y(ht), "Z"])
+					.attr(self.shape_attributes)
+			);
+		});
 	}
 	,
 	draw_connectors: function() {
+		var self = this;
+		console.log("Drawing painter", self, "points", self.index_pairs);
+		var index_pairs = Biojs.eval_if_function(self.index_pairs);
+		self.rapha_elems = [];
+		jQuery.each(index_pairs, function(ri, ii) {
+			//console.log(ar, self.row);
+			var ar0 = self.range_to_units(ii[0], ii[0]);
+			var ar1 = self.range_to_units(ii[1], ii[1]);
+			self.rapha_elems.push(
+				self.row.get_raphael()
+				.path(["M", ar0[0], self.baseline, "L", ar0[0]+1, self.baseline,
+						"L", ar1[0]+1, self.baseline+self.y_height,
+						"L", ar1[0], self.baseline+self.y_height, "Z"])
+				.attr(self.shape_attributes)
+			);
+		});
 	}
 	,
 	draw_points: function() {

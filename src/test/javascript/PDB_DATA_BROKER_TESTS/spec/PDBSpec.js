@@ -1,4 +1,4 @@
-xdescribe("PDB data broker", function() {
+describe("PDB data broker", function() {
 	it("is always defined if you include necessary javascript", function() {
 		expect(Biojs.PDB).toBeDefined();
 	});
@@ -181,7 +181,7 @@ function get_test_divid() {
 }
 
 describe("PDB sequence layout maker", function() {
-	xit("can draw a layout with rows that can hide and wait", function() {
+	it("can draw a layout with rows that can hide and wait", function() {
 		var divid = get_test_divid();
 		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
 		var lm = new Biojs.PDB_Sequence_Layout_Maker({
@@ -299,26 +299,34 @@ describe("PDB sequence layout maker", function() {
 				middle: [
 					new Biojs.PDB_Sequence_Layout_Painter({
 						height:row_height, width:dims.widths.middle,
-						baseline:5, y_height:10,
-						type:"histogram", heights:[10,20,30,50,30],
-						line_attributes: {fill:"green", stroke:null},
+						baseline:15, y_height:10, // y_height here is max heigt a histogram bar can be
+						type:"histogram", heights:{11:20,55:20,77:30,44:50,66:30}, // can give array here too
+						shape_attributes: {fill:"blue", stroke:null},
 						tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on histogram"; } },
 						hover_attributes: {fill:"lightgreen"}
 					}),
 					new Biojs.PDB_Sequence_Layout_Painter({
 						height:row_height, width:dims.widths.middle,
-						baseline:5, y_height:10,
-						type:"connectors", index_pairs:[[10,20], [20,15]],
-						line_attributes: {fill:"green", stroke:null},
+						baseline:25, y_height:10, // connector start at baseline Y and terminate below at Y+y_height
+						type:"connectors", index_pairs:[[11,44], [77,55]],
+						shape_attributes: {fill:"grey"}, // filled parallellograms
 						tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on connector"; } },
+						hover_attributes: {stroke:"blue"}
+					}),
+					new Biojs.PDB_Sequence_Layout_Painter({
+						height:row_height, width:dims.widths.middle,
+						baseline:35, y_height:10, // y_height here is max heigt a histogram bar can be
+						type:"histogram", heights:{11:-20,55:-20,77:-30,44:-50,66:-30}, // can give array here too
+						shape_attributes: {fill:"red", stroke:null},
+						tooltip:{ func: function(painter, index) { return "tooltip at index " + index + " on histogram"; } },
 						hover_attributes: {fill:"lightgreen"}
-					})
+					}),
 				]
 			}
 		}));
 		expect(true).toBe(true);
 	});
-	xit("can draw a layout where rows show waiting message while painter fetches data, and row hides if fetching fails for all painters", function() {
+	it("can draw a layout where rows show waiting message while painter fetches data, and row hides if fetching fails for all painters", function() {
 		var divid = get_test_divid();
 		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
 		var dims = {
