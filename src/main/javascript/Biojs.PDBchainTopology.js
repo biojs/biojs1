@@ -121,7 +121,7 @@ Biojs.PDBchainTopology = Biojs.extend (
 				Biojs.PDB_API_AJAX_Helper(
 					self.config.apiURL,
 					[
-						"/topology/entry/" + self.config["pdbid"] + "/chain/" + self.config.chain_id
+						"/topology/entry/" + self.config["pdbid"]// + "/chain/" + self.config.chain_id
 					],
 					successCallback_1,
 					function() {
@@ -1115,7 +1115,7 @@ Biojs.PDBchainTopology = Biojs.extend (
 		self.topodata.reslist = "in_progress";
 		Biojs.PDB_API_AJAX_Helper(
 			self.config.apiURL,
-			[ "/pdb/entry/residue_listing/" + self.config["pdbid"] + "/chain/" + self.config.chain_id ],
+			[ "/pdb/entry/residue_listing/" + self.config["pdbid"] ],//+ "/chain/" + self.config.chain_id ],
 			function() {
 				self.entry.makeResidueListing(Biojs.PDBajaxData, self.config.chain_id);
 				self.topodata.reslist = self.chain.getResidueListing();

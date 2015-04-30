@@ -250,8 +250,7 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 	makeResidueListing: function(apidata, chain_id) {
 		var self = this;
 		var url = "/pdb/entry/residue_listing/"+self.pid;
-		if(chain_id)
-			url += "/chain/" + chain_id;
+		//if(chain_id) url += "/chain/" + chain_id;
 		if(self.hasResidueListing()) return self.hasResidueListing(); // TODO when chain given
 		return ajaxORapidataHelper(
 			self.apiURL,
@@ -397,8 +396,7 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 	make2Dtopology: function(apidata, chain_id) {
 		var self = this;
 		var url = "/topology/entry/"+self.pid;
-		if(chain_id)
-			url += "/chain/" + chain_id;
+		//if(chain_id) url += "/chain/" + chain_id;
 		return ajaxORapidataHelper(
 			self.apiURL,
 			url,

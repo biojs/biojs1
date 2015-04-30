@@ -147,8 +147,8 @@ Biojs.PDB3dviewerJSmol = Biojs.PDB3dviewer.extend ( {
 			},
             script:
                 //'load ='+conf.pdbid+' filter "*.CA,*.P";cartoons only'
-				//"load 'http://www.ebi.ac.uk/pdbe/entry-files/download/pdb"+conf.pdbid+".ent';"
-				"load 'http://www.ebi.ac.uk/pdbe/entry-files/download/"+conf.pdbid+".cif';"
+				"load 'http://www.ebi.ac.uk/pdbe/entry-files/download/pdb"+conf.pdbid+".ent';"
+				//"load 'http://www.ebi.ac.uk/pdbe/entry-files/download/"+conf.pdbid+".cif';"
 				+" backbone only; backbone 0.2; select hetero and not water; wireframe 0.2; select all; zoom 100;"
 				//+"set antialiasDisplay ON;"
                 //"set antialiasTranslucent ON;"+
