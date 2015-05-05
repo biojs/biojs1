@@ -1,3 +1,5 @@
+clog = console.log.bind(console);
+
 if(!Biojs.PDB_instances) {
 	Biojs.PDB_instances = {};
 	Biojs.PDB_default_opts = {'api_url':"http://www.ebi.ac.uk/pdbe/api"};
@@ -131,6 +133,17 @@ if(!Biojs.PDB_instances) {
 		}
 		return Handlebars.compile(jQuery("#"+template_id).html(), {noEscape:true,strict:true});
 	};
+	Biojs.publication_key = function(apub) {
+		if(apub.pubmed_id)
+			pkey = apub.pubmed_id;
+		else if(apub.doi)
+			pkey = apub.doi;
+		else
+			pkey = apub.title;
+		if(!pkey)
+			pkey = Math.random();
+		return pkey;
+	};
 	Biojs.string_or_func_eval = function(markup) {
 		if(!markup)
 			return "";
@@ -190,6 +203,16 @@ Biojs.PDB = Biojs.extend ({
 	get_polymer_coverage_url: function(pdbid) {
 		var self = this;
 		return self.options.api_url + "/pdb/entry/polymer_coverage/" + pdbid;
+	}
+	,
+	get_publications_url: function(pdbid) {
+		var self = this;
+		return self.options.api_url + "/pdb/entry/citations/" + pdbid;
+	}
+	,
+	get_related_publications_url: function(pdbid) {
+		var self = this;
+		return self.options.api_url + "/pdb/entry/related_publications/" + pdbid;
 	}
 	,
 	get_entities_url: function(pdbid) {
@@ -335,6 +358,22 @@ Biojs.PDB_Entry = Biojs.extend ({
 		return self.api_data.title;
 	}
 	,
+	make_publications: function() {
+		var self = this;
+		if(self.publications)
+			return Biojs.promise_or_resolved_promise(self.publications);
+		var promise = Biojs.marked_promise();
+		var composite_promise = Biojs.when_no_deferred_pending([
+			self.options.pdb.multi_ajax({url: self.options.pdb.get_publications_url(self.pdbid)}),
+			self.options.pdb.multi_ajax({url: self.options.pdb.get_related_publications_url(self.pdbid)})
+		])
+		.done(function() {
+			promise.resolve(self.get_publications());
+		});
+		self.publications = promise;
+		return promise;
+	}
+	,
 	make_entities: function() {
 		var self = this;
 		if(self.entities)
@@ -369,6 +408,35 @@ Biojs.PDB_Entry = Biojs.extend ({
 	get_entity: function(eid) {
 		var self = this;
 		return self.entities[eid];
+	}
+	,
+	get_release_year: function() {
+		var self = this;
+		return parseInt(self.api_data.release_date.substring(0,4));
+	}
+	,
+	get_publications: function(type) {
+		// dependence: make_publications
+		// type can be "associated", "cited_by", "appears_without_citation" or absent(i.e. all)
+		var self = this;
+		var pdb = self.options.pdb;
+		var associated = pdb.get_api_data(pdb.get_publications_url(self.pdbid))[self.pdbid];
+		var related = pdb.get_api_data(pdb.get_related_publications_url(self.pdbid))[self.pdbid];
+		if(Biojs.undefined_or_promise(self.publications)) {
+			self.publications = {};
+			console.log("Adding publications", self.pdbid, associated, related);
+			self.publications["associated"] = associated;
+			self.publications["cited_by"] = {};
+			self.publications["appears_without_citation"] = {};
+			if(related) {
+				self.publications["cited_by"] = related["cited_by"];
+				self.publications["appears_without_citation"] = related["appears_without_citation"];
+			}
+		}
+		if(type)
+			return self.publications[type];
+		else
+			return self.publications;
 	}
 });
 
@@ -896,6 +964,7 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		self.tooltip = options.tooltip;
 		self.render_after_promise = options.render_after_promise ?
 			options.render_after_promise : Biojs.trivial_resolved_promise();
+		self.histo_x_pos = options.histo_x_pos ? options.histo_x_pos : {start:0, stop:99};
 	}
 	,
 	range_to_units: function(start, end) {
@@ -1008,10 +1077,12 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 			ri = parseInt(ri);
 			// draw box from 0-height to given-height
 			var aru = self.range_to_units(ri, ri);
+			var startx = aru[0] + self.histo_x_pos.start*(aru[1]-aru[0]+1)/100;
+			var stopx  = aru[0] + self.histo_x_pos.stop *(aru[1]-aru[0]+1)/100;
 			self.rapha_elems.push(
 				self.row.get_raphael()
-					.path(["M", aru[0], given_y_to_rapha_y(0), "L", aru[1], given_y_to_rapha_y(0),
-						"L", aru[1], given_y_to_rapha_y(ht), "L", aru[0], given_y_to_rapha_y(ht), "Z"])
+					.path(["M", startx, given_y_to_rapha_y(0), "L", stopx, given_y_to_rapha_y(0),
+						"L", stopx, given_y_to_rapha_y(ht), "L", startx, given_y_to_rapha_y(ht), "Z"])
 					.attr(self.shape_attributes)
 			);
 		});
@@ -1265,5 +1336,193 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 			return self.tooltip.func(self, index);
 		else if(self.tooltip.text)
 			return painter.tooltip.text;
+	}
+});
+
+
+Biojs.PDB_timelines_viewer = Biojs.extend ({
+	opt: {}
+ 	,
+	constructor: function(options) {
+		var self = this;
+		jQuery(options.target).html("PDB timelines loading...");
+		self.options = options;
+		self.pdbids = [];
+		var entries_promise = null;
+		if(options.entries.search_url) {
+			entries_promise = jQuery.ajax({
+				url:options.entries.search_url, crossDomain: 'true', type: 'GET',
+				success: function(data) {
+					jQuery.each(data.response.docs, function(di,adoc) {
+						self.pdbids.push(adoc.pdb_id);
+					});
+					self.pdbids = jQuery.unique(self.pdbids);
+				}
+			});
+		}
+		else
+			throw "how do i get PDB entries for timelines?!";
+		entries_promise.done(function() {
+			self.prepare_entry_objects();
+		});
+	}
+	,
+	render: function() {
+		var self = this;
+		var dims = {
+			widths:  {left:0, middle:400, right:0},
+			heights: {top:50, bottom:50, middle:{min:100,max:400}},
+		};
+		var lm = new Biojs.PDB_Sequence_Layout_Maker({
+			target:  self.options.target,
+			dimensions: dims,
+			markups: {
+				top: "Timeline of PDB entries and associated publications",
+				bottom: "Send comments to swanand@ebi.ac.uk"
+			},
+			seq_font_size:16, // this should be uniform across rows & painters
+			units_per_index:16, // fiddle this
+			num_slots:self.years.length
+		});
+		var row_height = 200;
+		lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
+			height:row_height,
+			markups: {
+				middle: [
+					new Biojs.PDB_Sequence_Layout_Painter({
+						height:row_height, width:dims.widths.middle,
+						baseline:30, y_height:50, // y_height here is max heigt a histogram bar can be
+						type:"histogram",
+						histo_x_pos:{start:10, stop:90}, // start and stop positions of histo bar on X axis in terms of percentages
+						heights: self.histo_entries,
+						shape_attributes: {fill:"blue", stroke:null},
+						hover_attributes: {fill:"lightgreen"},
+						tooltip:{ func: function(painter, index) {
+							var yr = self.years[index];
+							return yr + " : " + self.year_to_pids[yr].length + " entries : " + self.year_to_pids[yr];
+						}}
+					}),
+					new Biojs.PDB_Sequence_Layout_Painter({
+						height:row_height, width:dims.widths.middle,
+						baseline:130, y_height:50, // y_height here is max heigt a histogram bar can be
+						histo_x_pos:{start:20, stop:40}, // start and stop positions of histo bar on X axis in terms of percentages
+						type:"histogram",
+						heights: self.histo_pubs,
+						shape_attributes: {fill:"green", stroke:null},
+						hover_attributes: {fill:"lightgreen"},
+						tooltip:{ func: function(painter, index) {
+							var yr = self.years[index];
+							return yr + ": " + self.year_to_pubs[yr].length + " citations";
+						}}
+					})
+				]
+			}
+		}));
+	}
+	,
+	prepare_histo_data: function() {
+		var self = this;
+		var pdb = Biojs.get_PDB_instance();
+		self.year_to_pids = {}; // prepare
+		jQuery.each(self.pdbids, function(pi,pid) {
+			var year = pdb.get_pdb_entry(pid).get_release_year();
+			if(!self.year_to_pids[year])
+				self.year_to_pids[year] = [];
+			self.year_to_pids[year].push(pid);
+		});
+		self.year_to_pubs = {}; // prepare publications
+		jQuery.each(self.pdbids, function(pi,pid) {
+			jQuery.each(pdb.get_pdb_entry(pid).get_publications("associated"), function(bi,pub) {
+				var yr = pub.journal_info.year;
+				if(!yr) // can happen e.g. to be published
+					return;
+				if(!self.year_to_pubs[yr])
+					self.year_to_pubs[yr] = [];
+				self.year_to_pubs[yr].push(pub);
+			});
+			jQuery.each(["cited_by","appears_without_citation"], function(ci,ct) {
+				jQuery.each(pdb.get_pdb_entry(pid).get_publications(ct), function(at,articles) {
+						jQuery.each(articles, function(bi,pub) {
+							var yr = pub.year;
+							if(!yr) // can happen e.g. to be published
+								return;
+							if(!self.year_to_pubs[yr])
+								self.year_to_pubs[yr] = [];
+							self.year_to_pubs[yr].push(pub);
+						});
+				});
+			});
+		});
+		// uniquiefy publications in each year
+		jQuery.each(self.year_to_pubs, function(year, pubs) {
+			var newpubs = {};
+			jQuery.each(pubs, function(bi, apub) {
+				//console.log("SEE", year, apub);
+				newpubs[ Biojs.publication_key(apub) ] = apub;
+			});
+			var upubs = [];
+			for(var pk in newpubs)
+				upubs.push(newpubs[pk]);
+			self.year_to_pubs[year] = upubs;
+		});
+		// find min, max years
+		self.years = [];
+		var start_year = 10000, end_year = 1000;
+		jQuery.each([self.year_to_pubs,self.year_to_pids], function(di,yrd) {
+			for(var year in yrd) {
+				if(start_year > year)
+					start_year = year;
+				if(end_year < year)
+					end_year = year;
+			}
+		});
+		// set empty lists where there is no data for an year
+		jQuery.each([self.year_to_pubs,self.year_to_pids], function(di,yrd) {
+			for(var yr = start_year; yr <= end_year; yr++)
+				if(!yrd[yr])
+					yrd[yr] = [];
+		});
+		self.histo_entries = {}; self.histo_pubs = {};
+		for(var yr = start_year; yr <= end_year; yr++) {
+			self.histo_entries[yr-start_year] = self.year_to_pids[yr].length;
+			self.histo_pubs[yr-start_year] = -1 * self.year_to_pubs[yr].length;
+			self.years.push(yr);
+		}
+	}
+	,
+	prepare_entry_objects: function() {
+		var self = this;
+		var pdb = Biojs.get_PDB_instance(), promises = [];
+		jQuery.each(self.pdbids, function(pi,pid) {
+			promises.push(pdb.make_pdb_entry(pid));
+		});
+		Biojs.when_no_deferred_pending(promises)
+		.done(function() {
+			var valid_pdbids = [];
+			jQuery.each(self.pdbids, function(pi,pid) {
+				try {
+					var entry = pdb.get_pdb_entry(pid);
+					valid_pdbids.push(pid);
+				}
+				catch(e) {
+					console.warn("Could not create entry", pid, "...ignoring");
+				}
+			});
+			self.pdbids = valid_pdbids;
+			self.prepare_publications_data();
+		});
+	}
+	,
+	prepare_publications_data: function() {
+		var self = this;
+		var pdb = Biojs.get_PDB_instance(), promises = [];
+		jQuery.each(self.pdbids, function(pi,pid) {
+			promises.push(pdb.get_pdb_entry(pid).make_publications());
+		});
+		Biojs.when_no_deferred_pending(promises)
+		.done(function() {
+			self.prepare_histo_data();
+			self.render();
+		});
 	}
 });

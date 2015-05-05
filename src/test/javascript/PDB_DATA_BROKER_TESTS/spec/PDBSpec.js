@@ -1,4 +1,4 @@
-describe("PDB data broker", function() {
+xdescribe("PDB data broker", function() {
 	it("is always defined if you include necessary javascript", function() {
 		expect(Biojs.PDB).toBeDefined();
 	});
@@ -180,7 +180,7 @@ function get_test_divid() {
 	return "testdiv_" + Math.random().toString().replace(/^../,"");
 }
 
-describe("PDB sequence layout maker", function() {
+xdescribe("PDB sequence layout maker", function() {
 	it("can draw a layout with rows that can hide and wait", function() {
 		var divid = get_test_divid();
 		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
@@ -457,6 +457,23 @@ describe("PDB sequence layout maker", function() {
 					}
 				}));
 			});
+		});
+		expect(true).toBe(true);
+	});
+});
+
+
+describe("PDB/citations timeline viewer", function() {
+	it("can show a histogram of year of release vs num PDB entries, and associated citations.", function() {
+		var divid = get_test_divid();
+		jQuery('body').append("<br><br><br><div id="+divid+"></div>");
+		var ptv = new Biojs.PDB_timelines_viewer({
+			target: divid,
+			entries: {
+				search_url: 'http://www.ebi.ac.uk/pdbe/search/pdb/select?q=entry_authors:*Blundell*&wt=json&fl=pdb_id'
+				//search_url: 'http://www.ebi.ac.uk/pdbe/search/pdb/select?q=entry_authors:*Kleywegt*&wt=json&fl=pdb_id'
+				//search_url: 'http://www.ebi.ac.uk/pdbe/search/pdb/select?q=entry_authors:*Velankar*&wt=json&fl=pdb_id'
+			}
 		});
 		expect(true).toBe(true);
 	});
