@@ -1,0 +1,56 @@
+.pslm_top_menu {
+	border: 1px solid black;
+}
+.pslm_middle_panel {
+	border: 1px solid black;
+}
+.pslm_bottom_menu {
+	border: 1px solid black;
+}
+.pslm_row_left {
+	float:left;
+}
+.pslm_row_middle {
+	float:left;
+}
+.pslm_row_right {
+	float:right;
+}
+
+.cell_cover_container {
+    position: relative;
+}
+.cell_content {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0; left: 0;
+}
+.cell_cover {
+    z-index: 10;
+	border: 0px solid green;
+	background-color:grey; /*opacity:0.5;*/
+	display:none;
+}
+
+
+
+
+.rangeslider_tick_1 {
+	color: yellow;
+}
+.rangeslider_tick_10 {
+	color: red;
+}
+.rangeslider_tick_100 {
+	color: green;
+}
+.rangeslider_tick_1000 {
+	color: blue;
+}
+.rangeslider_tick_10000 {
+	color: purple;
+}
+.ui-rangeSlider-label {
+	bottom:5px;
+}

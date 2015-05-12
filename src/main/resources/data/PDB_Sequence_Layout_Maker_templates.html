@@ -1,0 +1,37 @@
+<div id="sequence_layout_maker_template">
+<div class="pslm_box" style='width:{{widths.total_width}}px;'>
+	<div class="pslm_top_menu" style="height:{{heights.top}}px;">{{top_markup}}</div>
+	<div class="pslm_middle_panel"></div>
+	<div class="pslm_bottom_menu" style="height:{{heights.bottom}}px;">{{bottom_markup}}</div>
+</div>
+</div>
+
+<div id="sequence_layout_row_template">
+<div class="pslm_row" id={{row_id}} style="height:{{row_height}}px;">
+	<div class="cell_cover_container" style="height:{{row_height}}px;width:{{widths.total_width}}px;">
+		<div class="cell_content">
+			<span class="pslm_row_left" style="width:{{widths.left}}px;">{{left_markup}}</span>
+			<span class="pslm_row_middle" style="width:{{widths.middle}}px;">{{middle_markup}}</span>
+			<span class="pslm_row_right" style="width:{{widths.right}}px;">{{right_markup}}</span>
+		</div>
+		<div class="cell_content cell_cover"></div>
+	</div>
+</div>
+</div>
+
+<div id="sequence_layout_row_template_per_cell_cover">
+<div class="pslm_row" id={{row_id}} style="height:{{row_height}}px;">
+	<span class="pslm_row_left" style="width:{{widths.left}}px;">
+		<div class="cell_cover_container" style="height:{{row_height}}px;width{{widths.left}}px;">
+			<div class="cell_content">{{left_markup}}</div>
+			<div class="cell_content cell_cover"></div>
+		</div>
+	</span>
+	<span class="pslm_row_middle" style="width:{{widths.middle}}px;">{{middle_markup}}</span>
+	<span class="pslm_row_right" style="width:{{widths.right}}px;">{{right_markup}}</span>
+</div>
+</div>
+
+<div id="sequence_layout_zoom_div">
+<div style='width:100%;' id='{{divid}}'>Zoom bar under construction...</div>
+</div>
