@@ -7,7 +7,6 @@
 	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 	<link rel="stylesheet" href="../../main/resources/dependencies/jquery/jquery-ui-1.10.3.custom/development-bundle/themes/base/jquery.ui.all.css"></link>
 
-	<script src="../../main/resources/dependencies/yui3-3.18.1/build/yui/yui-min.js" type="text/javascript"></script>
 
     <!-- Qtip2 -->
 	<script type="text/javascript" src="../../main/resources/dependencies/jquery/qtip2/jquery.qtip.js"></script>
@@ -27,7 +26,7 @@
     <script src="../../main/resources/dependencies/graphics/raphael-2.1.0.js" type="text/javascript" charset="utf-8"></script>
 
     <!-- Cufon font -->
-	<script src="http://cufon.shoqolate.com/js/cufon-yui.js" type="text/javascript"></script>
+	<script src="../../main/resources/dependencies/cufon-yui.js" type="text/javascript"></script>
 
     <!-- perfect scrollbar -->
 	<script src="http://www.ebi.ac.uk/~swanand/perfect-scrollbar/min/perfect-scrollbar-0.4.10.min.js"></script>
@@ -74,15 +73,16 @@
 
 		function test_entity_seq_layout(pid, chid, eid) {
 			var apiurl = "http://ves-hx-89.ebi.ac.uk/pdbe/api";
-			var apiurl = "http://puck.ebi.ac.uk:10000";
 			var apiurl = "http://wwwdev.ebi.ac.uk/pdbe/api";
+			var apiurl = "http://ebi-002.ebi.ac.uk:20000";
+			var apiurl = "http://www.ebi.ac.uk/pdbe/api";
+			var topo = new Biojs.PDBchainTopology({
+				target:"topodiv", pdbid:pid, entity_id:eid, chain_id:chid, size:300, apiURL:apiurl,
+				listen_topics: true, fire_topics: true
+			});
 			var seq = new Biojs.PDBsequencePainterLayout({
 				pdbid:pid, 'entity_id':eid, api_url:apiurl, style:"modelled_domains",
 				target:'entdiv2', width:800,
-				listen_topics: true, fire_topics: true
-			});
-			var topo = new Biojs.PDBchainTopology({
-				target:"topodiv", pdbid:pid, entity_id:eid, chain_id:chid, size:300, apiURL:apiurl,
 				listen_topics: true, fire_topics: true
 			});
 			var jsmol = new Biojs.PDB3dviewerJSmol({
