@@ -400,7 +400,7 @@ Biojs.PDBchainTopology = Biojs.extend (
 		else if(self.validation_api_called == "failed") {
 			self.show_waiting("Failed to obtain validation data from the PDBe API", true);
 			setTimeout( function() { self.show_waiting("",false); }, 3000 );
-			jQuery("#"+self.config.domseldiv+" option[value='Validation']").remove();
+			jQuery("#"+self.config.domseldiv+" option[value='Quality']").remove();
 		}
 		var vdata = self.entry.getValidationResidueDataForChain(conf.entity_id, conf.chain_id);
 		if(!vdata) {
@@ -478,7 +478,7 @@ Biojs.PDBchainTopology = Biojs.extend (
 		self.change_domain_in_selector(domtype);
 		if(domtype=="Annotations")
 			return;
-		if(domtype=="Validation") {
+		if(domtype=="Quality") {
 			self.show_validation_domain();
 		}
 		else { // scop/cath/pfam domain
@@ -767,7 +767,7 @@ Biojs.PDBchainTopology = Biojs.extend (
 		}
 		for(var dt in self.topodata.domains)
 			add(dt);
-		add("Validation");
+		add("Quality");
 	},
 
 	change_domain_in_selector: function(domtype) {
