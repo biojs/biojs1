@@ -30,7 +30,7 @@ Biojs.PDBdatabroker = Biojs.extend (
    *  Default values for the options
    *  @name Biojs.PDBdatabroker-opt
    */
-	opt: { apiURL:"http://www.ebi.ac.uk/pdbe/api" },
+	opt: {},
   
 	constructor: function (options) {
 		var self = this;
