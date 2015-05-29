@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>PDBe data broker tests</title>
+  <title>Sequence viewer demo</title>
 
   <!-- jasmine assets -->
   <link rel="shortcut icon" type="image/png" href="lib/jasmine-2.2.0/jasmine_favicon.png">
@@ -43,12 +43,15 @@
   <script type="text/javascript" src="../../../main/javascript/pdbe/utils.js"></script>
   <script type="text/javascript" src="../../../main/javascript/pdbe/Biojs.PDB_data_broker.js"></script>
   <script type="text/javascript" src="../../../main/javascript/pdbe/Biojs.PDB_sequence_layout.js"></script>
+  <script type="text/javascript" src="../../../main/javascript/pdbe/Biojs.PDB_timelines_viewer.js"></script>
+  <script type="text/javascript" src="../../../main/javascript/pdbe/Biojs.PDB_entity_viewer.js"></script>
 
   <link   rel="stylesheet"       href="../../../main/resources/css/Biojs.PDB_Sequence_Layout_Maker.css">
 
   <!-- run jasmine tests -->
   <script type="text/javascript">
-	Biojs.PDB.jasmine_tests();
+	Biojs.PDB_timelines_viewer.jasmine_tests();
+	Biojs.PDB_entity_viewer.jasmine_tests();
   </script>
 
 </head>
@@ -56,3 +59,4 @@
 <body>
 </body>
 </html>
+
