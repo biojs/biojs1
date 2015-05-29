@@ -432,9 +432,18 @@ Biojs.PDBsequencePainter = Biojs.extend({
 				}
 				self.set_glow_group([r, staff]);
 			}
-			else if(ps.type == "ellipse") {
+			else if(ps.type == "ellipse" || ps.type == "rectangle") {
 				if(!ps.x_rad) ps.x_rad = upi/2;
-				var r = rapha.ellipse(rx+upi/2, ps.center_y, ps.x_rad, ps.y_rad).attr({fill:painter.color, stroke:'none'});
+				var r = null;
+				if(ps.type == "ellipse")
+					r = rapha.ellipse(rx+upi/2, ps.center_y, ps.x_rad, ps.y_rad);
+				else
+					r = rapha.path(["M", rx+upi/2-ps.x_rad, ps.center_y-ps.y_rad,
+									"L", rx+upi/2-ps.x_rad, ps.center_y+ps.y_rad,
+									"L", rx+upi/2+ps.x_rad, ps.center_y+ps.y_rad,
+									"L", rx+upi/2+ps.x_rad, ps.center_y-ps.y_rad,
+									"Z"]);
+				r = r.attr({fill:painter.color, stroke:'none'});
 				painter.rapha_elems.push(r);
 				var staff = null;
 				if(ps.staff_base_y && ps.staff_base_y != ps.circle_center_y) {
@@ -586,8 +595,8 @@ Biojs.PDBsequencePainter = Biojs.extend({
 						// change tooltip
 						var newtip = self.get_tooltip_text(painter, seqindex, seqranges);
 						var qapi = jQuery(relem.node).data('qtip');
-    	           		qapi.options.content.text = newtip; // update content stored in options
-						qapi.elements.content.text(newtip); // update visible tooltip content
+    	           		qapi.options.content.html = newtip; // update content stored in options
+						qapi.elements.content.html(newtip); // update visible tooltip content
 					}
 				}
 			});

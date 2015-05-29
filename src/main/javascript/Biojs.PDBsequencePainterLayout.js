@@ -141,7 +141,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			"/pdb/entry/entities/" + conf.pdbid,
 			"/pdb/entry/polymer_coverage/" + conf.pdbid,
 			"/pdb/entry/secondary_structure/" + conf.pdbid,
-			"/pdb/entry/binding_sites/" + conf.pdbid,
+			"/pdb/entry/binding_sites/" + conf.pdbid
 		];
 		jQuery("#"+conf.target).html("Loading...");
 		self.get_api_data_then_layout(api_urls, 'modelled_domains_layout_callback');
@@ -176,7 +176,9 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			[
 				"/pdb/entry/residue_listing/" + conf.pdbid,
 				"/mappings/" + conf.pdbid,
-				"/validation/residuewise_outlier_summary/entry/" + conf.pdbid
+				"/validation/residuewise_outlier_summary/entry/" + conf.pdbid,
+				"/pdb/entry/modified_AA_or_NA/" + conf.pdbid,
+				"/pdb/entry/mutated_AA_or_NA/" + conf.pdbid
 			],
 			call_anyway,
 			function() {
@@ -276,6 +278,8 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		entry.makeBindingSites(conf.api_data);
 		entry.makeResidueListing(conf.api_data);
 		entry.makeValidationResidueSummary(conf.api_data);
+		entry.makeMutatedResidues(conf.api_data);
+		entry.makeModifiedResidues(conf.api_data);
 		self.ent = entry.getEntity(conf.entity_id);
 		// TODO some dimesions to be calculated properly later
 		var arbit_row_height = 20;
@@ -287,16 +291,20 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			painters: [ {type:"zoom"} ]
 		}];
 		// make row for entity
+		var epainters = [
+			{type:"domain", ranges:[[0,self.ent.getLength()-1]], topline:arbit_row_height*0.2, baseline:arbit_row_height*0.8, fill:self.colormaker.getDomainColor("entity",self.ent.getEid()),
+				tooltip:{
+					tfunc: function(painter, index, ranges) { return "Entity " + self.ent.getEid() + " : Residue " + (index+1) + " : " + self.ent.getSequence()[index]; }
+				},
+			},
+			{type:"sequence", sequence: self.ent.getSequence(), baseline:arbit_row_height/2, color:'white'}
+		];
+		jQuery.each(self.make_modified_mutated_painters(arbit_row_height), function(pi,ap) {
+			epainters.push(ap);
+		});
 		the_rows.push({
 			height:arbit_row_height, left_label:'Molecule', right_label:null, id:"entity_row",
-			painters:[
-				{type:"domain", ranges:[[0,self.ent.getLength()-1]], topline:arbit_row_height*0.2, baseline:arbit_row_height*0.8, fill:self.colormaker.getDomainColor("entity",self.ent.getEid()),
-					tooltip:{
-						tfunc: function(painter, index, ranges) { return "Entity " + self.ent.getEid() + " : Residue " + (index+1) + " : " + self.ent.getSequence()[index]; }
-					},
-				},
-				{type:"sequence", sequence: self.ent.getSequence(), baseline:arbit_row_height/2, color:'white'}
-			]
+			painters:epainters,
 		});
 		// make row for entity's pfam and uniprot annotations
 		for(var sdtype in {"UniProt":1, "Pfam":1}) {
@@ -568,6 +576,8 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		vdata = vdata1;
 		var vranges = {"green":[], "yellow":[], "orange":[], "red":[], "rsrz":[]};
 		for(var ri=0; ri < elen; ri++) {
+			if(!chain.isObserved(ri+1))
+				continue;
 			if(!vdata[ri+1] || !vdata[ri+1]["outlier_types"])
 				vranges["green"].push(ri);
 			else if(vdata[ri+1].outlier_types.length == 1 && vdata[ri+1].outlier_types.indexOf("RSRZ") == 0)
@@ -661,7 +671,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		console.log("Alt and het indices ", alt_indices, het_indices);
 		if(het_indices.length > 0) {
 			ret.push({
-				type:"lollipop", shape:{type:"ellipse", center_y:row_height*0.5, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0.1},
+				type:"lollipop", shape:{type:"rectangle", center_y:row_height*0.5, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0.1},
 				indices:het_indices, color:self.colormaker.getRandomColor(),
 				tooltip: {
 					tfunc: function(painter, index, ranges) {return "This residue has microheterogeneity.";}
@@ -671,7 +681,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		}
 		if(alt_indices.length > 0) {
 			ret.push({
-				type:"lollipop", shape:{type:"ellipse", center_y:row_height*0.5, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0.1},
+				type:"lollipop", shape:{type:"rectangle", center_y:row_height*0.5, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0.1},
 				indices:alt_indices, color:self.colormaker.getRandomColor(),
 				tooltip: {
 					tfunc: function(painter, index, ranges) {return "This residue has alternate conformers.";}
@@ -680,6 +690,47 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			});
 		}
 		return ret;
+	},
+	make_modified_mutated_painters: function(row_height) {
+		var self = this, conf = self.configs;
+		var entry = self.pdb.makeEntry(conf.pdbid, conf.api_data);
+		var painters = [];
+		jQuery.each([entry.getModifiedResidues(), entry.getMutatedResidues()], function(mri,modres) {
+			var modinds = [], ri2rinfo = {};
+			jQuery.each(modres, function(ri, rinfo) {
+				if(self.ent.getEid() == rinfo.entity_id && !ri2rinfo[rinfo.residue_number-1]) {
+					modinds.push(rinfo.residue_number-1);
+					ri2rinfo[rinfo.residue_number-1] = rinfo;
+				}
+			});
+			if(modinds.length == 0)
+				return;
+			painters.push({
+				type:"lollipop",
+				shape:{type:"rectangle", center_y:row_height*0.1, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0},
+				indices:modinds, color:self.colormaker.getRandomColor([[1,5],[1,5],[1,5]]),
+				tooltip: {
+					tfunc: function(painter, index, ranges) {
+						var rinfo = null;
+						try { rinfo = ri2rinfo[index]; }
+						catch(e) {}
+						if(!rinfo) return null;
+						var mut = rinfo.mutation_details;
+						if(mut) {
+							var from = mut.from ? mut.from : "unknown";
+							var to = mut.to ? mut.to : "unknown";
+							var type = mut.type ? mut.type : "unknown";
+							return from + " --> " + to + " ("+type+")";
+						}
+						else {
+							return "Modified residue: " + rinfo.chem_comp_id;
+						}
+					}
+				},
+				glow_on_hover: {fill:"silver"}
+			});
+		});
+		return painters;
 	},
 	make_ligand_description: function(binfo) {
 		var site_str = [];
@@ -711,7 +762,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		var ret = [];
 		jQuery.each(indices, function(site_id, res_inds) {
 			ret.push({
-				type:"lollipop", shape:{type:"ellipse", center_y:row_height*0.1, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0.1},
+				type:"lollipop", shape:{type:"rectangle", center_y:row_height*0.1, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0.1},
 				indices:res_inds, color:self.colormaker.getRandomColor(),
 				tooltip: {
 					tfunc: function(painter, index, ranges) {return "This residue is in binding site of ligand " + site_descs[site_id];}
@@ -831,13 +882,50 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 				type:"domain", ranges:self.adjust_ranges(inst.ranges, -1),
 				topline:row_height*0.3, baseline:row_height*0.7, fill:domcolor,
 				tooltip:{
-					tfunc: function(painter,seqind,ranges) { return domtype+' ' + inst.id; }
+					tfunc: function(painter,seqind,ranges) {
+						return "<b>" + inst.display_id + "</b>"
+						+ self.make_range_description(entry, chain.getEntityId(), inst, domtype, inst.id);
+					}
 				},
 				glow_on_hover:{opacity:0.5},
 				event_handlers: self.make_range_event_handlers(chain, domtype, inst.id)
 			} );
 		});
 		return painters;
+	},
+	make_range_description: function(entry, eid, inst, domtype, accession) {
+		var self = this;
+		if(!inst.ranges_description) {
+			inst.ranges_description = "";
+			var ranges = entry.getSiftsRangesFromResidueNumber(domtype, accession, eid);
+			var unique_ranges = {};
+			jQuery.each(ranges, function(ri,arange) {
+				var rkey = arange.start.author_residue_number +"-"+ arange.start.author_insertion_code
+					+ "-" + arange.end.author_residue_number +"-"+ arange.end.author_insertion_code
+					+ "-" + arange.unp_start + "-" + arange.unp_end;
+				if(!unique_ranges[rkey])
+					unique_ranges[rkey] = [];
+				unique_ranges[rkey].push({chain_id:arange.chain_id, start:arange.start, end:arange.end, unp_start:arange.unp_start, unp_end:arange.unp_end});
+			});
+			jQuery.each(unique_ranges, function(rkey, chains) {
+				inst.ranges_description += "<br>";
+				var chids = [];
+				jQuery.each(chains, function(chi, chdata) {
+					if(chi == 0 && chdata.unp_start)
+						inst.ranges_description += "UniProt range " + chdata.unp_start + " - " + chdata.unp_end + "<br>";
+					if(chi == 0)
+						inst.ranges_description += "PDB range " + chdata.start.author_residue_number + chdata.start.author_insertion_code
+								+ " - " + chdata.end.author_residue_number + chdata.end.author_insertion_code;
+					chids.push(chdata.chain_id);
+				});
+				chids.sort();
+				var chstr = "";
+				for(var chi=0; chi < chids.length; chi++)
+					chstr += chids[chi] + " ";
+				inst.ranges_description += " (chain" + (chains.length > 1 ? "s" : "") + " " + chstr + ")";
+			});
+		}
+		return inst.ranges_description;
 	},
 	make_seqdom_painters_for_entity: function(domtype, ent, row_height) {
 		var self = this, conf = self.configs;
@@ -861,7 +949,10 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 				type:"domain", ranges:self.adjust_ranges(inst.ranges, -1),
 				topline:row_height*0.3, baseline:row_height*0.7, fill:domcolor,
 				tooltip:{
-					tfunc: function(painter,seqind,ranges) { return props.ttip+' '+painter.data.unp_accession; },
+					tfunc: function(painter,seqind,ranges) {
+						return "<b>" + painter.data.unp_accession + "</b>"
+						+ self.make_range_description(entry, ent.getEid(), inst, domtype, painter.data.unp_accession);
+					},
 				},
 				data:{unp_accession:inst.id},
 				glow_on_hover:{opacity:0.5},
