@@ -965,6 +965,9 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		self.render_after_promise = options.render_after_promise ?
 			options.render_after_promise : Biojs.trivial_resolved_promise();
 		self.histo_x_pos = options.histo_x_pos ? options.histo_x_pos : {start:0, stop:99};
+		self.zoom_minval = options.zoom_minval;
+		self.zoom_no_seq_increments = options.zoom_no_seq_increments;
+		self.zoom_maxval = options.zoom_maxval;
 	}
 	,
 	range_to_units: function(start, end) {
@@ -1246,6 +1249,8 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 		var self = this;
 		//self.rapha = Raphael(self.divid, self.width, self.height);
 		var minval = 0, maxval = self.row.num_slots-1;
+		if(self.zoom_minval) minval = self.zoom_minval;
+		if(self.zoom_maxval) maxval = self.zoom_maxval;
 		console.log("Rendering zoom bar with range", minval, maxval, "width", self.width, "pixels/slot", self.px_per_index);
 		var tickorder = [10000,10000,1000,100,10,1];
 		if(self.px_per_index > 1) {}
@@ -1282,7 +1287,11 @@ Biojs.PDB_Sequence_Layout_Painter = Biojs.extend ({
 				}
 			],
 			range:{min:self.get_min_rangediff()+1, max:false},
-			formatter:function(seq_index) { return seq_index + 1 ; } // because indices are 1 onwards for biologists
+			formatter:function(seq_index) {
+				if(self.zoom_no_seq_increments)
+					return seq_index;
+				return seq_index + 1 ; // because indices are 1 onwards for biologists
+			}
 		});
 		jQuery('#'+self.divid).bind("valuesChanging", function(e,data) {
 			var thestart = data.values.min, thestop = data.values.max; // these will always be between bounds.min,max both inclusive
@@ -1370,7 +1379,7 @@ Biojs.PDB_timelines_viewer = Biojs.extend ({
 	render: function() {
 		var self = this;
 		var dims = {
-			widths:  {left:0, middle:400, right:0},
+			widths:  {left:0, middle:800, right:0},
 			heights: {top:50, bottom:50, middle:{min:100,max:400}},
 		};
 		var lm = new Biojs.PDB_Sequence_Layout_Maker({
@@ -1385,6 +1394,20 @@ Biojs.PDB_timelines_viewer = Biojs.extend ({
 			num_slots:self.years.length
 		});
 		var row_height = 200;
+		lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
+			height:50,
+			markups: {
+				left:"Z",
+				middle: [ // single painter for zoom row
+					new Biojs.PDB_Sequence_Layout_Painter({
+						height:row_height, width:dims.widths.middle,
+						type:"zoom",
+						zoom_minval:self.years[0]-1+1, zoom_maxval:self.years[self.years.length-1]+1,
+						zoom_no_seq_increments: true
+					})
+				]
+			}
+		}));
 		lm.add_row(new Biojs.PDB_Sequence_Layout_Row({
 			height:row_height,
 			markups: {
@@ -1405,7 +1428,7 @@ Biojs.PDB_timelines_viewer = Biojs.extend ({
 					new Biojs.PDB_Sequence_Layout_Painter({
 						height:row_height, width:dims.widths.middle,
 						baseline:130, y_height:50, // y_height here is max heigt a histogram bar can be
-						histo_x_pos:{start:20, stop:40}, // start and stop positions of histo bar on X axis in terms of percentages
+						histo_x_pos:{start:25, stop:45}, // start and stop positions of histo bar on X axis in terms of percentages
 						type:"histogram",
 						heights: self.histo_pubs,
 						shape_attributes: {fill:"green", stroke:null},
@@ -1414,16 +1437,43 @@ Biojs.PDB_timelines_viewer = Biojs.extend ({
 							var yr = self.years[index];
 							return yr + ": " + self.year_to_pubs[yr].length + " citations";
 						}}
-					})
+					}),
+					new Biojs.PDB_Sequence_Layout_Painter({
+						height:row_height, width:dims.widths.middle,
+						baseline:130, y_height:50, // y_height here is max heigt a histogram bar can be
+						histo_x_pos:{start:55, stop:75}, // start and stop positions of histo bar on X axis in terms of percentages
+						type:"histogram",
+						heights: self.histo_pubs,
+						shape_attributes: {fill:"red", stroke:null},
+						hover_attributes: {fill:"lightgreen"},
+						tooltip:{ func: function(painter, index) {
+							var yr = self.years[index];
+							return yr + ": " + self.year_to_pubs[yr].length + " citations";
+						}}
+					}),
 				]
 			}
 		}));
 	}
 	,
+	uniqueify_publications: function(key_to_pubs) {
+		jQuery.each(key_to_pubs, function(year, pubs) {
+			var newpubs = {};
+			jQuery.each(pubs, function(bi, apub) {
+				//console.log("SEE", year, apub);
+				newpubs[ Biojs.publication_key(apub) ] = apub;
+			});
+			var upubs = [];
+			for(var pk in newpubs)
+				upubs.push(newpubs[pk]);
+			key_to_pubs[year] = upubs;
+		});
+	}
+	,
 	prepare_histo_data: function() {
 		var self = this;
 		var pdb = Biojs.get_PDB_instance();
-		self.year_to_pids = {}; // prepare
+		self.year_to_pids = {}; // prepare year vs pdbids
 		jQuery.each(self.pdbids, function(pi,pid) {
 			var year = pdb.get_pdb_entry(pid).get_release_year();
 			if(!self.year_to_pids[year])
@@ -1442,29 +1492,19 @@ Biojs.PDB_timelines_viewer = Biojs.extend ({
 			});
 			jQuery.each(["cited_by","appears_without_citation"], function(ci,ct) {
 				jQuery.each(pdb.get_pdb_entry(pid).get_publications(ct), function(at,articles) {
-						jQuery.each(articles, function(bi,pub) {
-							var yr = pub.year;
-							if(!yr) // can happen e.g. to be published
-								return;
-							if(!self.year_to_pubs[yr])
-								self.year_to_pubs[yr] = [];
-							self.year_to_pubs[yr].push(pub);
-						});
+					jQuery.each(articles, function(bi,pub) {
+						var yr = pub.year;
+						if(!yr) // can happen e.g. to be published
+							return;
+						if(!self.year_to_pubs[yr])
+							self.year_to_pubs[yr] = [];
+						self.year_to_pubs[yr].push(pub);
+					});
 				});
 			});
 		});
 		// uniquiefy publications in each year
-		jQuery.each(self.year_to_pubs, function(year, pubs) {
-			var newpubs = {};
-			jQuery.each(pubs, function(bi, apub) {
-				//console.log("SEE", year, apub);
-				newpubs[ Biojs.publication_key(apub) ] = apub;
-			});
-			var upubs = [];
-			for(var pk in newpubs)
-				upubs.push(newpubs[pk]);
-			self.year_to_pubs[year] = upubs;
-		});
+		self.uniqueify_publications(self.year_to_pubs);
 		// find min, max years
 		self.years = [];
 		var start_year = 10000, end_year = 1000;
