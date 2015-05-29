@@ -3,26 +3,14 @@ Biojs.PDB_entity_viewer = Biojs.extend ({
  	,
 	constructor: function(options) {
 		var self = this;
-		jQuery(options.target).html("PDB timelines loading...");
+		jQuery("#"+options.target).html("PDB sequence viewer loading...");
 		self.options = options;
-		self.pdbids = [];
-		var entries_promise = null;
-		if(options.entries.search_url) {
-			entries_promise = jQuery.ajax({
-				url:options.entries.search_url, crossDomain: 'true', type: 'GET',
-				success: function(data) {
-					jQuery.each(data.response.docs, function(di,adoc) {
-						self.pdbids.push(adoc.pdb_id);
-					});
-					self.pdbids = jQuery.unique(self.pdbids);
-				}
-			});
-		}
-		else
-			throw "how do i get PDB entries for timelines?!";
-		entries_promise.done(function() {
-			self.prepare_entry_objects();
-		});
+		var pdb = Biojs.get_PDB_instance();
+		pdb.make_pdb_entry(self.options.entry_id)
+		.done(function(entry) {
+			console.log(entry);
+		})
+		.fail(self.basic_failure);
 	}
 	,
 	render: function() {
@@ -221,14 +209,11 @@ Biojs.PDB_entity_viewer.jasmine_tests = function() {
 	describe("PDBe entity viewer", function() {
 		it("displays a PDB entity, associated chains and annotations.", function() {
 			var divid = get_test_divid();
-			jQuery('body').append("<br><br><br><div id="+divid+"></div>");
+			jQuery('body').append("<br><br><br><div id="+divid+">HI</div>");
 			var ptv = new Biojs.PDB_entity_viewer({
 				target: divid,
-				entries: {
-					search_url: 'http://www.ebi.ac.uk/pdbe/search/pdb/select?q=entry_authors:*Blundell*&wt=json&fl=pdb_id'
-					//search_url: 'http://www.ebi.ac.uk/pdbe/search/pdb/select?q=entry_authors:*Kleywegt*&wt=json&fl=pdb_id'
-					//search_url: 'http://www.ebi.ac.uk/pdbe/search/pdb/select?q=entry_authors:*Velankar*&wt=json&fl=pdb_id'
-				}
+				entry_id: "1cbs",
+				entity_id: "1"
 			});
 			expect(true).toBe(true);
 		});

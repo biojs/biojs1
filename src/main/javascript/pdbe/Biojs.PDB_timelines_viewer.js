@@ -3,7 +3,7 @@ Biojs.PDB_timelines_viewer = Biojs.extend ({
  	,
 	constructor: function(options) {
 		var self = this;
-		jQuery(options.target).html("PDB timelines loading...");
+		jQuery("#"+options.target).html("PDB timelines loading...");
 		self.options = options;
 		self.pdbids = [];
 		var entries_promise = null;
@@ -218,7 +218,7 @@ Biojs.PDB_timelines_viewer = Biojs.extend ({
 
 
 Biojs.PDB_timelines_viewer.jasmine_tests = function() {
-	describe("PDBe timelines viewer", function() {
+	xdescribe("PDBe timelines viewer", function() {
 		it("displays PDB entries and associated publications.", function() {
 			var divid = get_test_divid();
 			jQuery('body').append("<br><br><br><div id="+divid+"></div>");
