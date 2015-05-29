@@ -247,6 +247,34 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 			function() { return self.entities; }
 		);
 	},
+	makeMutatedResidues: function(apidata) {
+		var self = this;
+		return ajaxORapidataHelper(
+			self.apiURL,
+			"/pdb/entry/mutated_AA_or_NA/"+self.pid,
+			function(t) {
+				self.mutated_residues = [];
+				if(t[self.pid])
+					self.mutated_residues = t[self.pid];
+			},
+			apidata,
+			function() { return self.mutated_residues; }
+		);
+	},
+	makeModifiedResidues: function(apidata) {
+		var self = this;
+		return ajaxORapidataHelper(
+			self.apiURL,
+			"/pdb/entry/modified_AA_or_NA/"+self.pid,
+			function(t) {
+				self.modified_residues = [];
+				if(t[self.pid])
+					self.modified_residues = t[self.pid];
+			},
+			apidata,
+			function() { return self.modified_residues; }
+		);
+	},
 	makeResidueListing: function(apidata, chain_id) {
 		var self = this;
 		var url = "/pdb/entry/residue_listing/"+self.pid;
@@ -282,6 +310,14 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 			function() { return self.sifts_mappings; }
 		);
 	},
+	getModifiedResidues: function() {
+		var self = this;
+		return self.modified_residues;
+	},
+	getMutatedResidues: function() {
+		var self = this;
+		return self.mutated_residues;
+	},
 	getSiftsMappings: function() {
 		var self = this;
 		return self.sifts_mappings;
@@ -298,11 +334,27 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 					ranges.push( [arange.start.residue_number, arange.end.residue_number] );
 			});
 			if(ranges.length > 0) // change here once instance id is available
+				var inst_id = unp;
+				if(mapdata.sccs)
+					inst_id = mapdata.sccs; // SCOP
 				instances.push( {
-					ranges:ranges, id:unp, description:mapdata.identifier
+					ranges:ranges, id:unp, display_id:inst_id, description:mapdata.identifier
 				} );
 		});
 		return instances;
+	},
+	getSiftsRangesFromResidueNumber: function(domtype, accession, entity_id) {
+		var self = this;
+		var mappings = self.getSiftsMappings();
+		if(!mappings || !mappings[domtype]) return "";
+		var ranges = [];
+		jQuery.each(mappings[domtype], function(unp,mapdata) {
+			jQuery.each(mapdata.mappings, function(ari,arange) {
+				if(arange.entity_id==entity_id && unp == accession)
+					ranges.push(arange);
+			});
+		});
+		return ranges;
 	},
 	getValidationPercentiles: function() {
 		var self = this;
@@ -523,6 +575,14 @@ Biojs.PDBdatabroker.EntityInstance = Biojs.extend ( {
 			sum += arange.end.residue_number - arange.start.residue_number + 1;
 		});
 		return sum;
+	},
+	isObserved: function(ri) {
+		var self = this;
+		for(var si=0; si < self.observed.length; si++) {
+			if(self.observed[si].start.residue_number <= ri && ri <= self.observed[si].end.residue_number)
+				return true;
+		}
+		return false;
 	},
 	get2Dtopology: function() {
 		var self = this;
