@@ -140,7 +140,6 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			"/pdb/entry/summary/" + conf.pdbid,
 			"/pdb/entry/entities/" + conf.pdbid,
 			"/pdb/entry/polymer_coverage/" + conf.pdbid,
-			"/pdb/entry/secondary_structure/" + conf.pdbid,
 			"/pdb/entry/binding_sites/" + conf.pdbid
 		];
 		jQuery("#"+conf.target).html("Loading...");
@@ -176,6 +175,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			[
 				"/pdb/entry/residue_listing/" + conf.pdbid,
 				"/mappings/" + conf.pdbid,
+				"/pdb/entry/secondary_structure/" + conf.pdbid,
 				"/validation/residuewise_outlier_summary/entry/" + conf.pdbid,
 				"/pdb/entry/modified_AA_or_NA/" + conf.pdbid,
 				"/pdb/entry/mutated_AA_or_NA/" + conf.pdbid
