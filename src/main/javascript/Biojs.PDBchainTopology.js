@@ -31,6 +31,7 @@
  * });	
  * 
  */
+
 Biojs.PDBchainTopology = Biojs.extend (
 /** @lends Biojs.PDBchainTopology# */
 {
