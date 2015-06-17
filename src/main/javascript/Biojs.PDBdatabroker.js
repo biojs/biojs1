@@ -278,8 +278,15 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 	makeResidueListing: function(apidata, chain_id) {
 		var self = this;
 		var url = "/pdb/entry/residue_listing/"+self.pid;
-		//if(chain_id) url += "/chain/" + chain_id;
-		if(self.hasResidueListing()) return self.hasResidueListing(); // TODO when chain given
+		if(chain_id) url += "/chain/" + chain_id;
+		if(chain_id) {
+			if(self.hasResidueListing(chain_id))
+ 				return self.hasResidueListing(chain_id);
+		}
+		else if(self.hasResidueListing())
+			return self.hasResidueListing();
+		if(!self.reslistAdded)
+			self.reslistAdded = {};
 		return ajaxORapidataHelper(
 			self.apiURL,
 			url,
@@ -289,9 +296,9 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 						self.getEntity(einfo.entity_id)
 							.getInstanceFromAuthAsym(chinfo.chain_id)
 							.addResidueListing(chinfo.residues);
+						self.reslistAdded[chinfo.chain_id] = true;
 					});
 				});
-				self.reslistAdded = true;
 			},
 			apidata,
 			function() { return self.hasResidueListing(); }
@@ -500,8 +507,10 @@ Biojs.PDBdatabroker.Entry = Biojs.extend ( {
 		var self = this;
 		return self.ramalist;
 	},
-	hasResidueListing: function() {
+	hasResidueListing: function(chid) {
 		var self = this;
+		if(chid && self.reslistAdded)
+			return self.reslistAdded[chid];
 		return self.reslistAdded;
 	},
 	getHelices: function() {

@@ -148,6 +148,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 	get_api_data_then_layout: function(api_urls, success_callback) {
 		var self = this, conf = self.configs;
 		if(conf.api_data) {
+			self.set_entity_chains_order();
 			self[success_callback]();
 			return;
 		}
@@ -155,6 +156,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			conf.api_url,
 			api_urls,
 			function() {
+				self.set_entity_chains_order();
 				self.get_more_optional_info(success_callback);
 			},
 			function() {
@@ -173,7 +175,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		Biojs.PDB_API_AJAX_Helper(
 			conf.api_url,
 			[
-				"/pdb/entry/residue_listing/" + conf.pdbid,
+				"/pdb/entry/residue_listing/" + conf.pdbid + "/chain/" + self.chains_order[0],
 				"/mappings/" + conf.pdbid,
 				"/pdb/entry/secondary_structure/" + conf.pdbid,
 				"/validation/residuewise_outlier_summary/entry/" + conf.pdbid,
@@ -267,6 +269,13 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			});
 		});
 	},
+	set_entity_chains_order: function() {
+		var self = this, conf = self.configs;
+		var entry = self.pdb.makeEntry(conf.pdbid, Biojs.PDBajaxData);
+		entry.makeEntities(Biojs.PDBajaxData);
+		self.ent = entry.getEntity(conf.entity_id);
+		self.chains_order = [ self.ent.getBestModelledInstance().getAuthAsymId() ];
+	},
 	modelled_domains_layout_callback: function() {
 		var self = this, conf = self.configs;
 		// initialize PDB objects
@@ -276,11 +285,10 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		entry.makeStructuralCoverage(conf.api_data);
 		entry.makeSecondaryStructure(conf.api_data);
 		entry.makeBindingSites(conf.api_data);
-		entry.makeResidueListing(conf.api_data);
 		entry.makeValidationResidueSummary(conf.api_data);
 		entry.makeMutatedResidues(conf.api_data);
 		entry.makeModifiedResidues(conf.api_data);
-		self.ent = entry.getEntity(conf.entity_id);
+		entry.makeResidueListing(conf.api_data, self.chains_order[0]);
 		// TODO some dimesions to be calculated properly later
 		var arbit_row_height = 20;
 		var lwidth = 100, rwidth = 0;
@@ -292,7 +300,9 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		}];
 		// make row for entity
 		var epainters = [
-			{type:"domain", ranges:[[0,self.ent.getLength()-1]], topline:arbit_row_height*0.2, baseline:arbit_row_height*0.8, fill:self.colormaker.getDomainColor("entity",self.ent.getEid()),
+			{type:"domain", ranges:[[0,self.ent.getLength()-1]],
+				topline:arbit_row_height*0.25, baseline:arbit_row_height*0.8,
+				fill:self.colormaker.getDomainColor("entity",self.ent.getEid()),
 				tooltip:{
 					tfunc: function(painter, index, ranges) { return "Entity " + self.ent.getEid() + " : Residue " + (index+1) + " : " + self.ent.getSequence()[index]; }
 				},
@@ -317,7 +327,6 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 			}
 		}
 		// make rows for best chain's modelled portions, secondary structure, scop and cath domains
-		self.chains_order = [ self.ent.getBestModelledInstance().getAuthAsymId() ];
 		jQuery.each(self.ent.instances, function(ii, inst) {
 			if(inst.getAuthAsymId() != self.chains_order[0]) self.chains_order.push(inst.getAuthAsymId());
 		});
@@ -374,6 +383,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 	},
 	make_bottom_menu: function(bottom_div) {
 		var self = this, conf = self.configs;
+		var entry = self.pdb.makeEntry(conf.pdbid, conf.api_data);
 		var chain_button = bottom_div + "_chainsButton", right_floater = bottom_div + "_right", left_floater = bottom_div + "_left";
 		var bot_menu_template = Handlebars.compile(" \
 			<div style='float:right;' id='{{right_floater}}'> \
@@ -400,8 +410,13 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 				jQuery("#"+chain_button).button("option", "disabled", true);
 				button_label(loading_label);
 				self.more_chains_added = [], more_rows = [], more_row_ids = [];
+				var chain_urls = [];
+				for(var ci=1; ci < self.chains_order.length; ci++)
+					chain_urls.push("/pdb/entry/residue_listing/" + conf.pdbid + "/chain/" + self.chains_order[ci]);
+				var call_anyway = function() {
 				for(var ci=1; ci < self.chains_order.length; ci++) {
 					var chid = self.chains_order[ci];
+					entry.makeResidueListing(conf.api_data, chid);
 					jQuery.each(self.make_chain_rows(chid, 20), function(cri,ch_row) {
 						more_rows.push(ch_row);
 						more_row_ids.push(ch_row.id);
@@ -413,6 +428,8 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 					button_label(less_label);
 					jQuery("#"+chain_button).button("option", "disabled", false);
 				}, 1); // timeout is needed to make Wait label appear on button
+				};
+				Biojs.PDB_API_AJAX_Helper(conf.api_url, chain_urls, call_anyway, call_anyway);
 				return;
 			}
 			if(btext==less_label) {
@@ -470,7 +487,20 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		ret_rows.push({
 			height:arbit_row_height, left_label:"Chain "+chid, right_label:null, id:self.make_obs_chain_row_id(chid),
 			painters: [
-				{type:"domain", ranges:obs_ranges, topline:arbit_row_height*0.2, baseline:arbit_row_height*0.8, fill:self.colormaker.getChainColor(self.ent.getPdbid(), self.ent.getEid(), chid),
+				{
+					type:"domain",
+					ranges:[[0,self.ent.getLength()-1]],
+					topline:arbit_row_height*0.4, baseline:arbit_row_height*0.6,
+					fill:"lightgrey",
+					tooltip: {
+						tfunc: function(painter, index, ranges) { return self.get_res_info_str(chid, index+1); }
+					}
+				},
+				{
+					type:"domain",
+					ranges:obs_ranges,
+					topline:arbit_row_height*0.2, baseline:arbit_row_height*0.8,
+					fill:self.colormaker.getChainColor(self.ent.getPdbid(), self.ent.getEid(), chid),
 					event_handlers: {
 						mouse_in: function(painter, index, ranges) {
 							self.fire_event(
@@ -789,7 +819,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		}
 		else {
 			if(!self.residue_listing_call_made) {
-				entry.makeResidueListing(conf.api_data);
+				entry.makeResidueListing(conf.api_data, chain_id);
 				self.residue_listing_call_made = true;
 			}
 			return "Residue information being fetched.";
