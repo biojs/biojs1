@@ -304,7 +304,10 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 				topline:arbit_row_height*0.25, baseline:arbit_row_height*0.8,
 				fill:self.colormaker.getDomainColor("entity",self.ent.getEid()),
 				tooltip:{
-					tfunc: function(painter, index, ranges) { return "Entity " + self.ent.getEid() + " : Residue " + (index+1) + " : " + self.ent.getSequence()[index]; }
+					tfunc: function(painter, index, ranges) {
+						return "Entity " + self.ent.getEid() + " : Index " + (index+1) + " : "
+							+ self.ent.getResidueDescription(index+1);
+					}
 				},
 			},
 			{type:"sequence", sequence: self.ent.getSequence(), baseline:arbit_row_height/2, color:'white'}
@@ -728,9 +731,12 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		jQuery.each([entry.getModifiedResidues(), entry.getMutatedResidues()], function(mri,modres) {
 			var modinds = [], ri2rinfo = {};
 			jQuery.each(modres, function(ri, rinfo) {
-				if(self.ent.getEid() == rinfo.entity_id && !ri2rinfo[rinfo.residue_number-1]) {
+				if(self.ent.getEid() == rinfo.entity_id) {
 					modinds.push(rinfo.residue_number-1);
-					ri2rinfo[rinfo.residue_number-1] = rinfo;
+					if(!ri2rinfo[rinfo.residue_number-1])
+						ri2rinfo[rinfo.residue_number-1] = [];
+					ri2rinfo[rinfo.residue_number-1].push(rinfo);
+					console.log("CHECKME", rinfo.residue_number-1, ri2rinfo[rinfo.residue_number-1]);
 				}
 			});
 			if(modinds.length == 0)
@@ -745,15 +751,21 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 						try { rinfo = ri2rinfo[index]; }
 						catch(e) {}
 						if(!rinfo) return null;
-						var mut = rinfo.mutation_details;
+						var froms = [];
+						jQuery.each(rinfo, function(rfi,rf) {
+							var mut = rf.mutation_details;
+							if(mut)
+								froms.push(mut.from ? mut.from : "unknown");
+						});
+						var mut = rinfo[0].mutation_details;
 						if(mut) {
-							var from = mut.from ? mut.from : "unknown";
+							var from = ""+froms;
 							var to = mut.to ? mut.to : "unknown";
 							var type = mut.type ? mut.type : "unknown";
 							return from + " --> " + to + " ("+type+")";
 						}
 						else {
-							return "Modified residue: " + rinfo.chem_comp_id;
+							return "Modified residue: " + rinfo[0].chem_comp_id;
 						}
 					}
 				},
@@ -795,7 +807,10 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 				type:"lollipop", shape:{type:"rectangle", center_y:row_height*0.1, y_rad: row_height*0.1, x_rad:null, staff_base_y: row_height*0.1},
 				indices:res_inds, color:self.colormaker.getRandomColor(),
 				tooltip: {
-					tfunc: function(painter, index, ranges) {return "This residue is in binding site of ligand " + site_descs[site_id];}
+					tfunc: function(painter, index, ranges) {
+						return self.get_res_info_str(chain.getAuthAsymId(), index+1)
+							+ " is in binding site of " + site_descs[site_id];
+					}
 				},
 				glow_on_hover: {fill:"gold"}
 			});

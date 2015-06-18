@@ -697,6 +697,24 @@ Biojs.PDBdatabroker.Entity = Biojs.extend ( {
 				{eid:self.getEid(), auth_asym_id:chid, struct_asym_id:self.data.in_struct_asyms[ci]},
 			self.apiURL, self.pid) );
 		});
+		self.doctor_sequence();
+	},
+	doctor_sequence: function() {
+		var self = this;
+		// maybe use "pdb_sequence_indices_with_multiple_residues" later
+		//console.log(self.data.sequence);
+		if(self.data.pdb_sequence)
+			self.data.sequence = self.data.pdb_sequence.replace(/\([^(]*\)/g, "*");
+	},
+	getResidueDescription: function(residue_number) { // residue_number >= 1
+		var self = this;
+		var ret = "Residue " + self.data.sequence[residue_number-1];
+		var sinfo = self.data.pdb_sequence_indices_with_multiple_residues;
+		if(sinfo && sinfo[residue_number]) {
+			ret = "Residue " + sinfo[residue_number]['three_letter_code'] +
+				" derived from " + sinfo[residue_number]['parent_chem_comp_ids'];
+		}
+		return ret;
 	},
 	is_protein_RNA_DNA: function() {
 		var self = this;
