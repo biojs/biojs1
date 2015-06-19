@@ -663,7 +663,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 						index += 1; // index into vdata is residue_index
 						var resstr = self.get_res_info_str(chain.getAuthAsymId(), index);
 						if(!vdata[index])
-							return "No validation issues reported for "+ resstr + ".";
+							return "No validation issues reported for "+ resstr;
 						return "Validation issues in "+ resstr + ": " + vdata[index].outlier_types;
 					}
 				},
@@ -758,14 +758,20 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 						jQuery.each(rinfo, function(rfi,rf) {
 							var mut = rf.mutation_details;
 							if(mut)
-								froms.push(mut.from ? mut.from : "unknown");
+								//froms.push(mut.from ? mut.from : "unknown");
+								if(mut.from)
+									froms.push(mut.from);
 						});
 						var mut = rinfo[0].mutation_details;
 						if(mut) {
+							//var from = ""+froms;
 							var from = ""+froms;
+								if(froms.length > 0){
+									from = ""+froms + " --> ";
+								}
 							var to = mut.to ? mut.to : "unknown";
 							var type = mut.type ? mut.type : "unknown";
-							return from + " --> " + to + " ("+type+")";
+							return from + to + " ("+type+")";
 						}
 						else {
 							return "Modified residue: " + rinfo[0].chem_comp_id;
