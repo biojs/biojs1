@@ -273,6 +273,7 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 		var self = this, conf = self.configs;
 		var entry = self.pdb.makeEntry(conf.pdbid, Biojs.PDBajaxData);
 		entry.makeEntities(Biojs.PDBajaxData);
+		entry.makeStructuralCoverage(Biojs.PDBajaxData);
 		self.ent = entry.getEntity(conf.entity_id);
 		self.chains_order = [ self.ent.getBestModelledInstance().getAuthAsymId() ];
 	},
@@ -660,8 +661,10 @@ Biojs.PDBsequencePainterLayout = Biojs.extend (
 				tooltip:{
 					tfunc: function(painter, index, ranges) {
 						index += 1; // index into vdata is residue_index
-						if(!vdata[index]) return "No validation issues reported for this residue.";
-						return "Validation issues in this residue: " + vdata[index].outlier_types;
+						var resstr = self.get_res_info_str(chain.getAuthAsymId(), index);
+						if(!vdata[index])
+							return "No validation issues reported for "+ resstr + ".";
+						return "Validation issues in "+ resstr + ": " + vdata[index].outlier_types;
 					}
 				},
 				event_handlers: {
